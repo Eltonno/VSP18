@@ -34,7 +34,7 @@
     %false ->
     %  util:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
      %%util:logging(DEBUGGER),
-      %{Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
+      %{Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:timestamp()}]}
 
 %  end.
 %.
@@ -104,9 +104,9 @@ push2DLQ({NNr, Msg, TSclientout, TShbqin}, {Size, Queue}, Datei) ->
       {Size, Queue};
     false ->
       util:logging(Datei, 'FALSE in push2DLQ \n'),
-      DEBUGGER = Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}],
+      DEBUGGER = Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:timestamp()}],
       util:logging(Datei, DEBUGGER),
-      {Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
+      {Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:timestamp()}]}
 
   end.
 

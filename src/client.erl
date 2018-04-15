@@ -16,10 +16,10 @@
 -define(GRUPPE, '3').
 -define(TEAM, '02').
 -define(MAXIMAL_RESPONSE_TIME_BEFORE_ERROR, 5000).
--define(CLIENT_LOGGING_FILE, "client.log").
+-define(CLIENT_LOGGING_FILE, "CLIENT").
 -define(REDAKTEUR_ATOM, redakteur).
 -define(LESER_ATOM, leser).
--define(RECHNER_NAME, 'rechner@123').
+-define(RECHNER_NAME, os:getenv("USERDOMAIN")).
 
 
 
@@ -63,20 +63,11 @@ start() ->
 .
 
 spawner(0, Lifetime, Servername, Servernode, Sendinterval) ->
-  util:logging(?CLIENT_LOGGING_FILE, "Alle Clients gestartet.");
+  ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
-  spawn(loop(Lifetime, Servername, Servernode, Sendinterval, list_to_atom('client_'++Clients))),
-  spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval)
-.
-
-% readConfig()
-
-%% Definition: Vor dem Start des Client-Prozesses muss die Konfigurationsdatei (siehe Vorlage) des Clients ausgelesen werden.
-%% Das Modul „vsutil.erl“ vom Professor wird hierfür verwendet.
-
-% pre: Die Datei „client.cfg“ ist vorhanden%
-% post: Die Datei wurde erfolgreich ausgelesen und die erforderlichen Werte zurückgeliefert
-% return: {Clients, Lifetime, Servername, Servernode, Sendinterval}
+  init(Lifetime, Servername, Servernode, Sendinterval, list_to_atom(lists:flatten(io_lib:format("CLIENT~B", [Clients])))),
+  %spawn(fun() ->loop(Lifetime, Servername, Servernode, Sendinterval, list_to_atom(lists:flatten(io_lib:format("CLIENT~B", [Clients]))))end),
+  spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval).
 
 readConfig() ->
   {ok, Configfile} = file:consult("client.cfg"),
@@ -90,18 +81,22 @@ readConfig() ->
   {Clients, Lifetime, Servername, Servernode, Sendinterval}.
 
 
+init(Lifetime, Servername, Servernode, Sendinterval,ClientName) ->
+  erlang:register(ClientName,spawn(client,loop(Lifetime,Servername,Servernode,Sendinterval,erlang:timestamp(),0,?REDAKTEUR_ATOM,false),[])),
+  util:logging(list_to_atom(lists:flatten(io_lib:format("~B@~B", [?CLIENT_LOGGING_FILE, ?RECHNER_NAME]))), "Der Client:" ++
+    util:to_String(ClientName) ++ " wurde registriert. ~n")
+.
 
-
-loop(Lifetime, Servername, Servernode, Sendinterval, ClientName) ->
+%loop(Lifetime, Servername, Servernode, Sendinterval, ClientName) ->
   % registriere den Prozess mit dem Erlang Prozess
-
-  erlang:register(ClientName, self()),
-
-  util:logging(?CLIENT_LOGGING_FILE, "Der Client:" ++
-    util:to_String(ClientName) ++ " wurde registriert. /n"),
-
-
-  loop(Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, false).
+%
+%  erlang:register(ClientName, self()),
+%
+%  util:logging(?CLIENT_LOGGING_FILE, "Der Client:" ++
+%    util:to_String(ClientName) ++ " wurde registriert. /n"),
+%
+%
+%  loop(Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, false).
 
 
 
@@ -111,7 +106,7 @@ loop(Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumbe
     true ->
       if TransmittedNumber == 4 ->
         NewRole = switchRoles(Role),
-        util:logging(?CLIENT_LOGGING_FILE,
+        util:logging(list_to_atom(lists:flatten(io_lib:format("~B@~B", [?CLIENT_LOGGING_FILE, ?RECHNER_NAME]))),
           "Client has switched role from:" ++
             util:to_String(Role) ++
             "| To NewRole:" ++
@@ -155,16 +150,12 @@ loop(Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumbe
 changeSendInterval(Sendinterval) ->
   util:logging(?CLIENT_LOGGING_FILE, "Trying to change Sendinterval for:" ++ util:to_String(Sendinterval) ++ "\n"),
 
-  Prop = rand:uniform(),
+  Prob = rand:uniform(),
   if
-    Sendinterval * (Prop + 0.5) ->
-      if Prop > 0.5 ->
-        Sendinterval + HalfInterval + 2;
-        true ->
-        (Sendinterval - HalfInterval) + 2
-      end;
+    (Sendinterval * (Prob + 0.5)) > 2 ->
+      (Sendinterval * (Prob + 0.5));
     true ->
-      Sendinterval
+      2
   end.
 
 
