@@ -65,7 +65,7 @@ start() ->
 spawner(0, Lifetime, Servername, Servernode, Sendinterval) ->
   util:logging(?CLIENT_LOGGING_FILE, "Alle Clients gestartet.");
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
-  spawn(loop(Lifetime, Servername, Servernode, Sendinterval, list_to_atom(util:to_String("client_"++Clients)))),
+  spawn(loop(Lifetime, Servername, Servernode, Sendinterval, list_to_atom('client_'++Clients))),
   spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval)
 .
 
@@ -155,11 +155,16 @@ loop(Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumbe
 changeSendInterval(Sendinterval) ->
   util:logging(?CLIENT_LOGGING_FILE, "Trying to change Sendinterval for:" ++ util:to_String(Sendinterval) ++ "\n"),
 
-  HalfInterval = Sendinterval / 2,
-  if rand:uniform() > 0.5 ->
-    Sendinterval + HalfInterval + 2;
+  Prop = rand:uniform(),
+  if
+    Sendinterval * (Prop + 0.5) ->
+      if Prop > 0.5 ->
+        Sendinterval + HalfInterval + 2;
+        true ->
+        (Sendinterval - HalfInterval) + 2
+      end;
     true ->
-      (Sendinterval - HalfInterval) + 2
+      Sendinterval
   end.
 
 
