@@ -94,18 +94,18 @@ push2DLQ({NNr, Msg, TSclientout, TShbqin}, {Size, Queue}, Datei) ->
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % {Size, Queue}? Müsste eigentlich nur Queue sein
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  util:logging(?QUEUE_LOGGING_FILE,"Aufruf von push2DLQ mit {Size, Queue} :" ++
-    util:logging({Size, Queue}) ++ "\n"),
-  util:logging(?QUEUE_LOGGING_FILE," erlang:length(Queue) < Size :" ++
-    util:logging(erlang:length(Queue) < Size) ++ "\n"),
+  util:logging(Datei,"Aufruf von push2DLQ mit {Size, Queue} :" ++
+    util:logging(Datei, {Size, Queue}) ++ "\n"),
+  util:logging(Datei," erlang:length(Queue) < Size :" ++
+    util:logging(Datei, erlang:length(Queue) < Size) ++ "\n"),
   case erlang:length(Queue) >= Size of
     true ->
-      util:logging(?QUEUE_LOGGING_FILE,"Die DLQ ist Voll, Message:" ++ util:logging(NNr) ++ " kann nicht verarbeitet werden!"),
+      util:logging(Datei,"Die DLQ ist Voll, Message:" ++ util:logging(Datei, NNr) ++ " kann nicht verarbeitet werden!"),
       {Size, Queue};
     false ->
-      util:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
+      util:logging(Datei, 'FALSE in push2DLQ \n'),
       DEBUGGER = Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}],
-      util:logging(DEBUGGER),
+      util:logging(Datei, DEBUGGER),
       {Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
 
   end.
@@ -127,7 +127,7 @@ deliverMSG(MSGNr, ClientPID, {Size, Queue}) ->
 
   util:logging(?QUEUE_LOGGING_FILE,
     "Body of dilverMSG logging routine for MSGNr" ++
-      util:logging(MSGNr) ++
+      util:logging(?QUEUE_LOGGING_FILE, MSGNr) ++
       " \n"
   ),
 
@@ -135,7 +135,7 @@ deliverMSG(MSGNr, ClientPID, {Size, Queue}) ->
 
   util:logging(?QUEUE_LOGGING_FILE,
     "Body of dilverMSG logging routine Sort DLQ  {_Size,SortedQueue}:" ++
-      util:logging( {_Size,SortedQueue}) ++
+      util:logging(?QUEUE_LOGGING_FILE, {_Size,SortedQueue}) ++
       " \n"),
 
   Result = lists:keyfind(MSGNr,1,SortedQueue),
@@ -145,7 +145,7 @@ deliverMSG(MSGNr, ClientPID, {Size, Queue}) ->
 
   util:logging(?QUEUE_LOGGING_FILE,
     "Set Exists Flag is:" ++
-      util:logging( Exists) ++
+      util:logging(?QUEUE_LOGGING_FILE, Exists) ++
       " \n"),
 
   Tsdlqout = erlang:timestamp(),
@@ -181,9 +181,9 @@ findMessage(_,_,{NNr, Msg, TSclientout, TShbqin, TSdlqin}) ->
 % post: Wir haben die letzte Nachricht der DLQ
 % return: gibt das letzte Element der Liste der DLQ zuruck
 
-last({Size,[]}) ->
+last({_,[]}) ->
   1;
-last({Size,List}) ->
+last({_,List}) ->
   lists:last(List).
 
 % sortDLQ(DLQ)
