@@ -6,45 +6,41 @@
 %%% @end
 %%% Created : 04. Apr 2018 16:46
 %%%-------------------------------------------------------------------
--module(dlq).
--author("Elton").
+%-module(dlq).
+%-author("Elton").
 
 %% API
--export([initDLQ/2]).
+%-export([initDLQ/2]).
 
-initDLQ(Size,Datei) ->
-  [],
-  receive
-    {request,deliverMSG,NNr,ToClient} ->
-      deliverMSG(NNr,ToClient,Queue,dlq.log);
-    {request,delDLQ} ->
-      delDLQ(Queue);
-    {request,push2DLQ} ->
-      push2DLQ()
-  end.
+%initDLQ(Size,Datei) ->
+%  [],
+%  receive
+%    {request,deliverMSG,NNr,ToClient} ->
+%      deliverMSG(NNr,ToClient,Queue,dlq.log);
+ %   {request,delDLQ} ->
+  %    delDLQ(Queue);
+   % {request,push2DLQ} ->
+    %  push2DLQ()
+%  end.
 
-delDLQ(Queue) ->
-  io:format("exterminate").
+%delDLQ(Queue) ->
+ % io:format("exterminate").
 
-expectedNr(Queue) ->
-  io:format("number").
+%expectedNr(Queue) ->
+ % io:format("number").
 
-push2DLQ([NNr,Msg,TSclientout,TShbqin],Queue,Datei) ->
-  case erlang:length(Queue) >= Size of
-    true ->
-      vsutil:logging(Datei,"Die DLQ ist Voll, Message:" ++ vsutil:to_String(NNr) ++ " kann nicht verarbeitet werden!"),
-      {Size, Queue};
-    false ->
-      werkzeug:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
-      DEBUGGER = Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}],
-      werkzeug:to_String(DEBUGGER),
-      {Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
+%push2DLQ([NNr,Msg,TSclientout,TShbqin],Queue,Datei) ->
+ %%%%  {Size, Queue};
+    %false ->
+    %  util:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
+     %%util:logging(DEBUGGER),
+      %{Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
 
-  end.
-.
+%  end.
+%.
 
-deliverMSG(MSGNr,ClientPID,Queue,Datei) ->
-  io:format("deliver").
+%deliverMSG(MSGNr,ClientPID,Queue,Datei) ->
+ % io:format("deliver").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,9 +74,12 @@ deliverMSG(MSGNr,ClientPID,Queue,Datei) ->
 % return: {Size, []} - 2-Tupel mit Size als 1. Element und einer leeren Liste als 2. Element
 
 initDLQ(Size, Datei) ->
-  werkzeug:logging('DLQ init', Datei),
+  util:logging('DLQ init', Datei),
   {Size, []}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%delDLQ(Queue) fehlt
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % push2DLQ([NNr, Msg, TSclientout, TShbqin], Queue, Datei)
 
@@ -92,18 +91,21 @@ initDLQ(Size, Datei) ->
 
 
 push2DLQ({NNr, Msg, TSclientout, TShbqin}, {Size, Queue}, Datei) ->
-  werkzeug:logging(?QUEUE_LOGGING_FILE,"Aufruf von push2DLQ mit {Size, Queue} :" ++
-    werkzeug:to_String({Size, Queue}) ++ "\n"),
-  werkzeug:logging(?QUEUE_LOGGING_FILE," erlang:length(Queue) < Size :" ++
-    werkzeug:to_String(erlang:length(Queue) < Size) ++ "\n"),
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % {Size, Queue}? Müsste eigentlich nur Queue sein
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  util:logging(?QUEUE_LOGGING_FILE,"Aufruf von push2DLQ mit {Size, Queue} :" ++
+    util:logging({Size, Queue}) ++ "\n"),
+  util:logging(?QUEUE_LOGGING_FILE," erlang:length(Queue) < Size :" ++
+    util:logging(erlang:length(Queue) < Size) ++ "\n"),
   case erlang:length(Queue) >= Size of
     true ->
-      werkzeug:logging(?QUEUE_LOGGING_FILE,"Die DLQ ist Voll, Message:" ++ werkzeug:to_String(NNr) ++ " kann nicht verarbeitet werden!"),
+      util:logging(?QUEUE_LOGGING_FILE,"Die DLQ ist Voll, Message:" ++ util:logging(NNr) ++ " kann nicht verarbeitet werden!"),
       {Size, Queue};
     false ->
-      werkzeug:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
+      util:logging(?QUEUE_LOGGING_FILE, 'FALSE in push2DLQ \n'),
       DEBUGGER = Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}],
-      werkzeug:to_String(DEBUGGER),
+      util:logging(DEBUGGER),
       {Size, Queue ++ [{NNr, Msg, TSclientout,TShbqin, erlang:now()}]}
 
   end.
@@ -119,18 +121,21 @@ push2DLQ({NNr, Msg, TSclientout, TShbqin}, {Size, Queue}, Datei) ->
 % return: die tatsächlich verschickte MSGNr als Integer-Wert an den HBQ-Prozess
 
 deliverMSG(MSGNr, ClientPID, {Size, Queue}) ->
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % deliverMSG(MSGNr, ClientPID, Queue, Datei)
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  werkzeug:logging(?QUEUE_LOGGING_FILE,
+  util:logging(?QUEUE_LOGGING_FILE,
     "Body of dilverMSG logging routine for MSGNr" ++
-      werkzeug:to_String(MSGNr) ++
+      util:logging(MSGNr) ++
       " \n"
   ),
 
   {_Size,SortedQueue} = sortDLQ({Size, Queue}),
 
-  werkzeug:logging(?QUEUE_LOGGING_FILE,
+  util:logging(?QUEUE_LOGGING_FILE,
     "Body of dilverMSG logging routine Sort DLQ  {_Size,SortedQueue}:" ++
-      werkzeug:to_String( {_Size,SortedQueue}) ++
+      util:logging( {_Size,SortedQueue}) ++
       " \n"),
 
   Result = lists:keyfind(MSGNr,1,SortedQueue),
@@ -138,12 +143,12 @@ deliverMSG(MSGNr, ClientPID, {Size, Queue}) ->
 
   Exists = lists:any(fun({_NNr, _, _, _, _}) -> _NNr > NNr end, SortedQueue),
 
-  werkzeug:logging(?QUEUE_LOGGING_FILE,
+  util:logging(?QUEUE_LOGGING_FILE,
     "Set Exists Flag is:" ++
-      werkzeug:to_String( Exists) ++
+      util:logging( Exists) ++
       " \n"),
 
-  Tsdlqout = erlang:now(),
+  Tsdlqout = erlang:timestamp(),
   NewMessage = {reply,[NNr, Msg, TSclientout, TShbqin, TSdlqin,Tsdlqout],Exists},
   ClientPID ! NewMessage.
 

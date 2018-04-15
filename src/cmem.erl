@@ -10,4 +10,6 @@
 -author("Elton").
 
 %% API
--export([]).
+-export([initCMEM/2, delCMEM/1, updateClient/4, getClientNNr/2]).
+
+
