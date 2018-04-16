@@ -45,7 +45,7 @@ switchRoles(?LESER_ATOM) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fireAction({redakteur, Servername, Servernode}, Interval, Flag, ClientName, CID) ->
-  sendMSG(Servername, Servernode, 0, Interval, Flag, ClientName, CID);
+  dropMSG(Servername, Servernode, 0, Interval, Flag, ClientName, CID);
 fireAction({leser, Servername, Servernode}, _, _, ClientName, CID) ->
   getMSG(Servername, Servernode, ClientName, CID).
 
@@ -79,7 +79,7 @@ readConfig() ->
 
 init(Lifetime, Servername, Servernode, Sendinterval,ClientName) ->
   erlang:register(list_to_atom(ClientName),client,loop(ClientName,self(),Lifetime,Servername,Servernode,Sendinterval,erlang:timestamp(),0,?REDAKTEUR_ATOM,false),[]),
-  util:logging(ClientName, "Der Client:" ++
+  util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
     util:to_String(ClientName) ++ " wurde registriert. ~n").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +95,7 @@ loop(ClientName, CID, Lifetime, Servername, Servernode, Sendinterval, StartTime,
     true ->
       if
         TransmittedNumber == 5 ->
-          NNr = askForMSGID(Servername, Servernode, CID),
+          NNr = getMSGID(Servername, Servernode, CID),
           forgottenMessage(NNr, calendar:now_to_local_time(erlang:timestamp()), ClientName),
           loop(ClientName, CID, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role, INNRflag);
         TransmittedNumber == 6 ->
@@ -129,15 +129,34 @@ changeSendInterval(Sendinterval) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-logIncomeMsg([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName) ->
-  NewMessage = util:to_String(NNr) ++
-    "te_Nachricht. C Out:" ++
-    util:to_String(calendar:now_to_local_time(TSclientout)) ++
-    "| ; HBQ In:" ++
-    util:to_String(calendar:now_to_local_time(TShbqin)) ++
-    "| ; DLQ Out:" ++
-    util:to_String(calendar:now_to_local_time(TSdlqout)) ++
-    "\n",
+readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName) ->
+  TSclientin = calendar:now_to_local_time(erlang:timestamp()),
+  if
+    TSclientout == {0,0,0} ->     %% vsutil:equalTS(TSclientout, {0,0,0}) musn't be used in guard therefor we used <---
+      util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
+    true ->
+      Boolean = vsutil:lessTS(TSdlqout, TSclientin),
+      if
+        Boolean ->
+          NewMessage = util:to_String(NNr) ++
+            "te_Nachricht. C Out:" ++
+            util:to_String(calendar:now_to_local_time(TSclientout)) ++
+            "| ; HBQ In:" ++
+            util:to_String(calendar:now_to_local_time(TShbqin)) ++
+            "| ; DLQ Out:" ++
+            util:to_String(calendar:now_to_local_time(TSdlqout)) ++
+            "|***Nachricht von Zukunft ^^\n";
+        true ->
+          NewMessage = util:to_String(NNr) ++
+            "te_Nachricht. C Out:" ++
+            util:to_String(calendar:now_to_local_time(TSclientout)) ++
+            "| ; HBQ In:" ++
+            util:to_String(calendar:now_to_local_time(TShbqin)) ++
+            "| ; DLQ Out:" ++
+            util:to_String(calendar:now_to_local_time(TSdlqout)) ++
+            "\n"
+      end
+  end,
   util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), NewMessage).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,44 +166,18 @@ getMSG(Servername, Servernode, ClientName, CID) ->
 
   receive
     {reply, [NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], false} ->
-      TSclientin = calendar:now_to_local_time(erlang:timestamp()),
-      if
-        TSclientout == {0,0,0} ->
-          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
-        true ->
-          {Time,_,_} = vsutil:diffTS(TSdlqout, TSclientin),
-          if
-            Time < 0 ->
-              logIncomeMsg([NNr, Msg ++ "|***Nachricht von Zukunft ^^", TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
-              getMSG(Servername, Servernode, ClientName, CID);
-            true ->
-              logIncomeMsg([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
-              getMSG(Servername, Servernode, ClientName, CID)
-          end
-      end;
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
+      getMSG(Servername, Servernode, ClientName, CID);
     {reply, [NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], true} ->
-      TSclientin = calendar:now_to_local_time(erlang:timestamp()),
-      if
-        TSclientout == {0,0,0} ->
-          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
-        true ->
-          {Time,_,_} = vsutil:diffTS(TSdlqout, TSclientin),
-          if
-            Time < 0 ->
-              logIncomeMsg([NNr, Msg ++ "|***Nachricht von Zukunft ^^", TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
-              ok;
-            true ->
-              logIncomeMsg([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
-              ok
-          end
-      end
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
+      ok
   after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
     util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Leser did not response" ++ util:to_String(erlang:timestamp()))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-askForMSGID(Servername, Servernode, CID) ->
+getMSGID(Servername, Servernode, CID) ->
   {Servername, Servernode} ! {self(), getmsgid},
   receive
     {nid, Number} ->
@@ -195,14 +188,14 @@ askForMSGID(Servername, Servernode, CID) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-sendMSG(Servername, Servernode, TimeLastSending, Interval, INNRflag, ClientName, CID) ->
+dropMSG(Servername, Servernode, TimeLastSending, Interval, INNRflag, ClientName, CID) ->
   Msg = "Gruppe:" ++
     util:to_String(?GRUPPE) ++
     "; | Team:" ++
     util:to_String(?TEAM) ++
     "; | Rechnername:" ++
     util:to_String(?RECHNER_NAME),
-  INNr = askForMSGID(Servername, Servernode, CID),
+  INNr = getMSGID(Servername, Servernode, CID),
   timer:sleep(trunc(Interval * 1000)),
   TSClientout = erlang:timestamp(),
   {Servername, Servernode} ! {dropmessage, [INNr, Msg, TSClientout]},
