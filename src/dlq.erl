@@ -42,19 +42,8 @@
 %deliverMSG(MSGNr,ClientPID,Queue,Datei) ->
  % io:format("deliver").
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%-------------------------------------------------------------------
-%%% @author kbrusch
-%%% @copyright (C) 2015, <COMPANY>
-%%% @doc
-%%%
-%%% @end
-%%% Created : 02. Apr 2015 10:06 AM
-%%%-------------------------------------------------------------------
 -module(dlq).
--author("kbrusch").
+-author("Elton").
 -export([initDLQ/2, deliverMSG/3, sortDLQ/1, expectedNrDLQ/1, push2DLQ/3,last/1]).
 -define(QUEUE_LOGGING_FILE, "HBQ.txt").
 
@@ -95,7 +84,7 @@ push2DLQ({NNr, Msg, TSclientout, TShbqin}, {Size, Queue}, Datei) ->
   % {Size, Queue}? Müsste eigentlich nur Queue sein
   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   util:logging(Datei,"Aufruf von push2DLQ mit {Size, Queue} :" ++
-    util:logging(Datei, {Size, Queue}) ++ "\n"),
+zip:openzip_close(){Size, Queue}) ++ "\n"),
   util:logging(Datei," erlang:length(Queue) < Size :" ++
     util:logging(Datei, erlang:length(Queue) < Size) ++ "\n"),
   case erlang:length(Queue) >= Size of
