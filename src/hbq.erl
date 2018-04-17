@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author kbrusch
+%%% @author Elton
 %%% @copyright (C) 2015, <COMPANY>
 %%% @doc
 %%%
@@ -32,7 +32,7 @@
 
 
 start() ->
-  {ok, ConfigListe} = file:consult('../server.cfg'),
+  {ok, ConfigListe} = file:consult('server.cfg'),
   {ok, HBQname} = vsutil:get_config_value(hbqname, ConfigListe),
   {ok, DlqLimit} = vsutil:get_config_value(dlqlimit, ConfigListe),
 
@@ -144,7 +144,7 @@ initHBQandDLQ(Size, ServerPID) ->
 % return: NewHBQ
 
 pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
-  Tshbqin = erlang:now(),
+  Tshbqin = erlang:timestamp(),
   %erlang:display("das ist die queue"++util:to_String(OldHBQ)),
   %erlang:display("das ist die neue queue"++util:to_String(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}])),
   SortedHBQ = sortHBQ(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}]),

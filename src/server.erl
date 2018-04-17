@@ -29,7 +29,9 @@
 
 
 -define(SERVER_LOGGING_FILE, "-Server.txt").
--include("../tools/ourtools.hrl").
+
+timestamp_to_millis({MegaSecs, Secs, MicroSecs}) ->
+  (MegaSecs * 1000000 + Secs) * 1000 + round(MicroSecs / 1000).
 
 initHBQ(HBQname, HBQnode) ->
   {HBQname, HBQnode} ! {self(), {request, initHBQ}},
@@ -87,7 +89,7 @@ start() ->
 
 readConfig() ->
 
-  {ok, ConfigListe} = file:consult("../server.cfg"),
+  {ok, ConfigListe} = file:consult("server.cfg"),
   {ok, Latency} = vsutil:get_config_value(latency, ConfigListe),
   {ok, Clientlifetime} = vsutil:get_config_value(clientlifetime, ConfigListe),
   {ok, Servername} = vsutil:get_config_value(servername, ConfigListe),
