@@ -17,7 +17,7 @@
 
 initCMEM(RemTime, Datei) ->
   util:logging(Datei, "CMEM initialisiert\nRemTime is: " ++ util:to_String(RemTime) ++ "\n"),
-  [RemTime, []].
+  {[], RemTime}.
 
 delCMEM(_CMEM) ->
   ok.
@@ -32,104 +32,28 @@ delCMEM(_CMEM) ->
 
 
 
-updateClient([RemTime,CMEM], ClientID, NNr, Datei) ->
+updateClient({CMEM,RemTime}, ClientID, NNr, Datei) ->
   ClientTS = vsutil:getUTC(),
   util:logging(Datei, lists:concat(["CMEM>>> Client ", pid_to_list(ClientID), " updated (", NNr, "/", ClientTS, ")\n"])),
-  [lists:keystore(ClientID, 1, CMEM, {ClientID, NNr, ClientTS}), RemTime].
+  {lists:keystore(ClientID, 1, CMEM, {ClientID, NNr, ClientTS}), RemTime}.
 
-%%
-%%%%%%%%Überprüfen ob dieser Client schon in der CMEM ist
-%%  {CClientID,LLastMessageNumber,TTime} =
-%%
-%%  case lists:keyfind(ClientID,1,CMEM) of
-%%    %%%%%%Wenn ja, NNr aktualisieren
-%%
-%%    {ClientID,LastMessageNumber,Time} ->
-%%        {ClientID,LastMessageNumber,Time};
-%%      false ->
-%%        {ClientID,NNr,erlang:timestamp()}
-%%   end,
-%%Filter = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end,
-%%
-%%  _NewCMEM = lists:filter(Filter,CMEM),
-%%  %%%%Ansonsten Client mit NNr in CMEM speichern
-%%
-%%  %%%%%Loggen
-%%
-%%  NewMessage = util:to_String(ClientID) ++
-%%    " hat Nachricht " ++
-%%    util:to_String(NNr) ++
-%%    " bekommen und der CMEM wurde aktualisiert " ++
-%%    "\n",
-%%  util:logging(Datei, NewMessage),
-%%
-%%  {_NewCMEM ++ [{ClientID,LLastMessageNumber,erlang:timestamp()}]}.
-
-
-
-
-
-%%  F = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end,
-%%  _NewCMEM = lists:filter(F,CMEM),
-%%  {Clientlifetime,_NewCMEM ++ [{ClientID,NNr,erlang:timestamp()}]};
-%%
-%%updateClient({Clientlifetime,CMEM}, ClientID, NNr, Datei) ->
-%%  %Find = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID == ClientID end,
-%%
-%%  Filter = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end,
-%%  {CClientID,LLastMessageNumber,TTime} =
-%%    case lists:keyfind(ClientID,1,CMEM) of
-%%      {ClientID,LastMessageNumber,Time} ->
-%%        {ClientID,LastMessageNumber,Time};
-%%      false ->
-%%        {ClientID,NNr,erlang:timestamp()}
-%%    end,
-%%
-%%
-%%  _NewCMEM = lists:filter(Filter,CMEM),
-%%
-%%  {Clientlifetime,_NewCMEM ++ [{ClientID,LLastMessageNumber,erlang:timestamp()}]}.
-
-
-% getClientNNr(CMEM, ClientID)
-
-%% Definition: Liefert dem Server die nächste Nachrichtennummer die an die ClientID geschickt werden soll.
-
-% pre: keine
-% post: nicht veränderte CMEM, da nur lesend
-% return: ClientID als Integer-Wert, wenn nicht vorhanden wird 1 zurückgegeben
-
-%%getClientNNr(CMEM, ClientID) ->
-%%  util:logging('CMEM', "\n" ++ util:to_String(CMEM) ++ "\n"),
-%%  get_last_message_id(CMEM, ClientID).
-%%
-%%%% LNNr -> Letzte Nachrichten Nummer
-%%
-%%get_last_message_id([], _) ->
-%%  1;
-%%
-%%get_last_message_id(CMEM, ClientID) ->
-%%%%  {ClientID, LNNr, _Time} = lists:keyfind(ClientID, 1, CMEM),
-%%%%  Last_message_id.
-%%  NNr = case lists:keyfind(ClientID, 1, CMEM) of
-%%          {ClientID, LNNr, _Time} -> {ClientID, LNNr, _Time};
-%%          false -> {ClientID, 1, erlang:timestamp()}
-%%        end,
-%%  NNr.
 
 %% Request which NNr the client may obtain next
-getClientNNr([RemTime, CMEM], ClientID) ->
-  Existent = lists:keymember(ClientID, 1, CMEM),
-  if
-    Existent ->
-      {ClientID, LNNr, Time} = lists:keyfind(ClientID, 1, CMEM),
-      Duration = Time + RemTime,
-      Now = vsutil:getUTC(),
-      if
-        Duration >= Now -> LNNr + 1;
-        true -> 1
-      end;
-    true ->
-      1
-  end.
+getClientNNr({CMEMList, RemTime}, ClientID) ->
+  Existent = lists:keymember(ClientID, 1, CMEMList),
+  getClientNNr({CMEMList, RemTime}, ClientID, Existent).
 
+%% unknown Client
+getClientNNr(_CMEM, _ClientID, false) -> 1;
+
+%% known client, time exceeded? YES -> 1, NO, NNr + 1
+getClientNNr({CMEMList, RemTime}, ClientID, true) ->
+  {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
+  NNr + 1
+%%  Duration = ClientTimestamp + RemTime,
+%%  Now = vsutil:getUTC(),
+%%  Comparisson = vsutil:compareUTC(Duration, Now),
+%%  if
+%%   Comparisson == afterw -> NNr + 1;
+%%    true -> 1
+%%  end.

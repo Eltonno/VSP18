@@ -101,7 +101,6 @@ loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, Tran
         TransmittedNumber == 6 ->
           NewRole = switchRoles(Role),
           NewInterval = changeSendInterval(Sendinterval),
-          NewInterval = changeSendInterval(Sendinterval),
           loop(ClientName, Lifetime, Servername, Servernode, NewInterval, StartTime, 0, NewRole);
         true ->
           ActionReturn = fireAction({Role, Servername, Servernode}, Sendinterval, ClientName),
