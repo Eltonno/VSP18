@@ -8,36 +8,23 @@
 %%%-------------------------------------------------------------------
 -module(cmem).
 -author("Elton").
--export([initCMEM/2, getClientNNr/2, updateClient/4, delExpiredCl/1]).
-
-
-
-
-
+-export([initCMEM/2, getClientNNr/2, updateClient/4, delCMEM/1]).
 
 
 
 % initCMEM(RemTime, Datei)
-
 %% Definition: Initialisiert die CMEM für den Server.
-
-% pre: keine
-% post: neues 2-Tupel erstellt
-% return: {RemTime, []} - 2-Tupel mit RemTime als erstes Element und eine leere CMEM-Liste als 2. Element
 
 initCMEM(RemTime, Datei) ->
   util:logging(Datei, "CMEM initialisiert\nRemTime is: " ++ util:to_String(RemTime) ++ "\n"),
-  [].
+  [RemTime, []].
+
+delCMEM(_CMEM) ->
+  ok.
 
 
 % updateClient(CMEM, ClientID, NNr, Datei)
-
 %% Definition: Speichert/Aktualisiert im CMEM die ClientID mit der NNr.
-
-%pre: nötige Übergabeparameter sind korrekt
-%post: neuer Client gespeichert, oder einen bereits vorhandenen Client aktualisiert
-%% return: aktualisiertes CMEM
-
 
 %% {Clientlifetime,CMEM} {Int,[{<PID>,Int,{Int,Int,Int}}]}
 %% Clientlifetime,CMEM} {Size,[{ClientPID,LastMessageID,LastMessageTimestamp}]}
@@ -45,34 +32,38 @@ initCMEM(RemTime, Datei) ->
 
 
 
-updateClient(CMEM, ClientID, NNr, Datei) ->
+updateClient([RemTime,CMEM], ClientID, NNr, Datei) ->
+  ClientTS = vsutil:getUTC(),
+  util:logging(Datei, lists:concat(["CMEM>>> Client ", pid_to_list(ClientID), " updated (", NNr, "/", ClientTS, ")\n"])),
+  [lists:keystore(ClientID, 1, CMEM, {ClientID, NNr, ClientTS}), RemTime].
 
-%%%%%%Überprüfen ob dieser Client schon in der CMEM ist
-  {CClientID,LLastMessageNumber,TTime} =
-
-  case lists:keyfind(ClientID,1,CMEM) of
-    %%%%%%Wenn ja, NNr aktualisieren
-
-    {ClientID,LastMessageNumber,Time} ->
-        {ClientID,LastMessageNumber,Time};
-      false ->
-        {ClientID,NNr,erlang:timestamp()}
-   end,
-Filter = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end,
-
-  _NewCMEM = lists:filter(Filter,CMEM),
-  %%%%Ansonsten Client mit NNr in CMEM speichern
-
-  %%%%%Loggen
-
-  NewMessage = util:to_String(ClientID) ++
-    " hat Nachricht " ++
-    util:to_String(NNr) ++
-    " bekommen und der CMEM wurde aktualisiert " ++
-    "\n",
-  util:logging(Datei, NewMessage),
-
-  {_NewCMEM ++ [{ClientID,LLastMessageNumber,erlang:timestamp()}]}.
+%%
+%%%%%%%%Überprüfen ob dieser Client schon in der CMEM ist
+%%  {CClientID,LLastMessageNumber,TTime} =
+%%
+%%  case lists:keyfind(ClientID,1,CMEM) of
+%%    %%%%%%Wenn ja, NNr aktualisieren
+%%
+%%    {ClientID,LastMessageNumber,Time} ->
+%%        {ClientID,LastMessageNumber,Time};
+%%      false ->
+%%        {ClientID,NNr,erlang:timestamp()}
+%%   end,
+%%Filter = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end,
+%%
+%%  _NewCMEM = lists:filter(Filter,CMEM),
+%%  %%%%Ansonsten Client mit NNr in CMEM speichern
+%%
+%%  %%%%%Loggen
+%%
+%%  NewMessage = util:to_String(ClientID) ++
+%%    " hat Nachricht " ++
+%%    util:to_String(NNr) ++
+%%    " bekommen und der CMEM wurde aktualisiert " ++
+%%    "\n",
+%%  util:logging(Datei, NewMessage),
+%%
+%%  {_NewCMEM ++ [{ClientID,LLastMessageNumber,erlang:timestamp()}]}.
 
 
 
@@ -108,35 +99,37 @@ Filter = fun({_ClientID,_LastMessageNumer, _Time}) -> _ClientID =/= ClientID end
 % post: nicht veränderte CMEM, da nur lesend
 % return: ClientID als Integer-Wert, wenn nicht vorhanden wird 1 zurückgegeben
 
-getClientNNr(CMEM, ClientID) ->
-  get_last_message_id(CMEM, ClientID).
+%%getClientNNr(CMEM, ClientID) ->
+%%  util:logging('CMEM', "\n" ++ util:to_String(CMEM) ++ "\n"),
+%%  get_last_message_id(CMEM, ClientID).
+%%
+%%%% LNNr -> Letzte Nachrichten Nummer
+%%
+%%get_last_message_id([], _) ->
+%%  1;
+%%
+%%get_last_message_id(CMEM, ClientID) ->
+%%%%  {ClientID, LNNr, _Time} = lists:keyfind(ClientID, 1, CMEM),
+%%%%  Last_message_id.
+%%  NNr = case lists:keyfind(ClientID, 1, CMEM) of
+%%          {ClientID, LNNr, _Time} -> {ClientID, LNNr, _Time};
+%%          false -> {ClientID, 1, erlang:timestamp()}
+%%        end,
+%%  NNr.
 
-%% LNNr -> Letzte Nachrichten Nummer
+%% Request which NNr the client may obtain next
+getClientNNr([RemTime, CMEM], ClientID) ->
+  Existent = lists:keymember(ClientID, 1, CMEM),
+  if
+    Existent ->
+      {ClientID, LNNr, Time} = lists:keyfind(ClientID, 1, CMEM),
+      Duration = Time + RemTime,
+      Now = werkzeug:getUTC(),
+      if
+        Duration >= Now -> LNNr + 1;
+        true -> 1
+      end;
+    true ->
+      1
+  end.
 
-get_last_message_id([], _) ->
-  1;
-
-get_last_message_id(CMEM, ClientID) ->
-  NNr = case lists:keyfind(ClientID, 1, CMEM) of
-          {ClientID, LNNr, _Time} -> {ClientID, LNNr, _Time};
-          false -> {ClientID, 1, erlang:timestamp()}
-        end,
-  NNr.
-
-
-% delExpiredCl(CMEM, Clientlifetime)
-
-%%Definition: In dieser Methode werden die Clients gelöscht, welche die Clientlifetime überschritten haben.
-
-%pre: keine
-%post: veränderte CMEM
-%return: Das Atom ok als Rückgabewert // falsch veränderte CMEM
-
-delExpiredCl({Clientlifetime, Queue}) ->
-  Now = timestamp_to_millis(erlang:timestamp()),
-  F = fun({_ClientID,_LastMessageNumer, _Time}) -> (Now - timestamp_to_millis(_Time)) < Clientlifetime * 1000   end,
-  NewQueue = lists:filter(F,Queue),
-  {Clientlifetime,NewQueue}.
-
-timestamp_to_millis({MegaSecs, Secs, MicroSecs}) ->
-  (MegaSecs * 1000000 + Secs) * 1000 + round(MicroSecs / 1000).
