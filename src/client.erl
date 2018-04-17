@@ -57,7 +57,7 @@ start() ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-spawner(0, Lifetime, Servername, Servernode, Sendinterval) ->
+spawner(0, _Lifetime, _Servername, _Servernode, _Sendinterval) ->
   ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
   spawn(fun() -> init(Lifetime, Servername, Servernode, Sendinterval, ("Client" ++ util:to_String(Clients)))end),
@@ -138,38 +138,39 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName) ->
       Boolean = vsutil:lessTS(TSdlqout, TSclientin),
       if
         Boolean ->
-          NewMessage = util:to_String(NNr) ++
+          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+            util:to_String(NNr) ++
             "te_Nachricht. C Out:" ++
             util:to_String(calendar:now_to_local_time(TSclientout)) ++
             "| ; HBQ In:" ++
             util:to_String(calendar:now_to_local_time(TShbqin)) ++
             "| ; DLQ Out:" ++
             util:to_String(calendar:now_to_local_time(TSdlqout)) ++
-            "|***Nachricht von Zukunft ^^\n";
+            "|***Nachricht von Zukunft ^^\n");
         true ->
-          NewMessage = util:to_String(NNr) ++
+          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+            util:to_String(NNr) ++
             "te_Nachricht. C Out:" ++
             util:to_String(calendar:now_to_local_time(TSclientout)) ++
             "| ; HBQ In:" ++
             util:to_String(calendar:now_to_local_time(TShbqin)) ++
             "| ; DLQ Out:" ++
             util:to_String(calendar:now_to_local_time(TSdlqout)) ++
-            "\n"
+            "\n")
       end
   end,
-  util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), NewMessage).
+  ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 getMSG(Servername, Servernode, ClientName, CID) ->
   {Servername, Servernode} ! {CID, getmessages},
-
   receive
-    {reply, [NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], false} ->
-      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
+    {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], false} ->
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName),
       getMSG(Servername, Servernode, ClientName, CID);
-    {reply, [NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], true} ->
-      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], ClientName),
+    {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], true} ->
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName),
       ok
   after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
     util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Leser did not response" ++ util:to_String(erlang:timestamp()))
@@ -178,7 +179,7 @@ getMSG(Servername, Servernode, ClientName, CID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 getMSGID(Servername, Servernode, CID) ->
-  {Servername, Servernode} ! {self(), getmsgid},
+  {Servername, Servernode} ! {CID, getmsgid},
   receive
     {nid, Number} ->
       Number
