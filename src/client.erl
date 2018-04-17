@@ -4,7 +4,7 @@
 %%% @doc
 %%%
 %%% @end
-%%% Created : 04. Apr 2018 16:44
+%%% Created : 04. Apr 2018 16:45
 %%%-------------------------------------------------------------------
 -module(client).
 -author("Elton").
@@ -44,10 +44,10 @@ switchRoles(?LESER_ATOM) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-fireAction({redakteur, Servername, Servernode}, Interval, ClientName) ->
-  dropMSG(Servername, Servernode, Interval, ClientName);
-fireAction({leser, Servername, Servernode}, _, ClientName) ->
-  getMSG(Servername, Servernode, ClientName).
+fireAction({redakteur, Servername, Servernode}, Interval, ClientName, OwnMsgs) ->
+  dropMSG(Servername, Servernode, Interval, ClientName, OwnMsgs);
+fireAction({leser, Servername, Servernode}, _, ClientName, OwnMsgs) ->
+  getMSG(Servername, Servernode, ClientName, OwnMsgs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -78,18 +78,18 @@ readConfig() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(Lifetime, Servername, Servernode, Sendinterval,ClientName) ->
-  erlang:register(list_to_atom(ClientName),client,loop(ClientName,Lifetime,Servername,Servernode,Sendinterval,erlang:timestamp(),0,?REDAKTEUR_ATOM),[]),
-  util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
+  erlang:register(list_to_atom(ClientName),client,loop(ClientName,Lifetime,Servername,Servernode,Sendinterval,erlang:timestamp(),0,?REDAKTEUR_ATOM, []),[]),
+  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
     util:to_String(ClientName) ++ " wurde registriert. ~n").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 forgottenMessage(NNr, Timestamp, ClientName) ->
-  util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ util:to_String(Timestamp) ++ " wurde vergessen.\n").
+  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ util:to_String(Timestamp) ++ " wurde vergessen.\n").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber, Role) ->
+loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber, Role, OwnMsgs) ->
 
   case not is_time_over(StartTime, Lifetime) of
     true ->
@@ -97,22 +97,22 @@ loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, Tran
         TransmittedNumber == 5 ->
           NNr = getMSGID(Servername, Servernode),
           forgottenMessage(NNr, calendar:now_to_local_time(erlang:timestamp()), ClientName),
-          loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role);
+          loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role, OwnMsgs);
         TransmittedNumber == 6 ->
           NewRole = switchRoles(Role),
           NewInterval = changeSendInterval(Sendinterval),
-          loop(ClientName, Lifetime, Servername, Servernode, NewInterval, StartTime, 0, NewRole);
+          loop(ClientName, Lifetime, Servername, Servernode, NewInterval, StartTime, 0, NewRole, OwnMsgs);
         true ->
-          ActionReturn = fireAction({Role, Servername, Servernode}, Sendinterval, ClientName),
+          ActionReturn = fireAction({Role, Servername, Servernode}, Sendinterval, ClientName, OwnMsgs),
           case erlang:is_tuple(ActionReturn) of
             true ->
-              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role);
+              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role, OwnMsgs);
             false ->
-              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, 0, switchRoles(Role))
+              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, 0, switchRoles(Role), OwnMsgs)
           end
       end;
     false ->
-      util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "ClientID-X Lifetime is over - terminating at" ++ util:to_String(erlang:timestamp()) ++ "\n"),
+      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "ClientID-X Lifetime is over - terminating at" ++ util:to_String(erlang:timestamp()) ++ "\n"),
       erlang:exit("Lifetime is over")
   end.
 
@@ -129,51 +129,79 @@ changeSendInterval(Sendinterval) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName) ->
+readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
   TSclientin = calendar:now_to_local_time(erlang:timestamp()),
   if
     TSclientout == {0,0,0} ->     %% vsutil:equalTS(TSclientout, {0,0,0}) musn't be used in guard therefor we used <---
-      util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
+      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
     true ->
       Boolean = vsutil:lessTS(TSdlqout, TSclientin),
+      Member = lists:member(NNr, OwnMsgs),
       if
-        Boolean ->
-          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"),
-            util:to_String(NNr) ++
-            "te_Nachricht. C Out:" ++
-            util:to_String(TSclientout) ++
-            "| ; HBQ In:" ++
-            util:to_String(TShbqin) ++
-            "| ; DLQ Out:" ++
-            util:to_String(TSdlqout) ++
-            "|***Nachricht von Zukunft ^^\n");
+        Member ->
+          if
+            Boolean ->
+              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "|***Nachricht aus der Zukunft ^^ *******\n");
+            true ->
+              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "*******\n")
+          end;
         true ->
-          util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"),
-            util:to_String(NNr) ++
-            "te_Nachricht. C Out:" ++
-            util:to_String(TSclientout) ++
-            "| ; HBQ In:" ++
-            util:to_String(TShbqin) ++
-            "| ; DLQ Out:" ++
-            util:to_String(TSdlqout) ++
-            "\n")
+          Boolean = vsutil:lessTS(TSdlqout, TSclientin),
+          if
+            Boolean ->
+              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "|***Nachricht aus der Zukunft ^^\n");
+            true ->
+              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "\n")
+          end
       end
   end,
   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-getMSG(Servername, Servernode, ClientName) ->
+getMSG(Servername, Servernode, ClientName, OwnMsgs) ->
   {Servername, Servernode} ! {self(), getmessages},
   receive
     {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], false} ->
-      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName),
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs),
       getMSG(Servername, Servernode, ClientName);
     {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], true} ->
-      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName),
+      readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs),
       ok
   after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
-    util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Leser did not response" ++ util:to_String(erlang:timestamp()))
+    util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Leser bekam keine Antwort um " ++ util:to_String(erlang:timestamp()))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,12 +212,12 @@ getMSGID(Servername, Servernode) ->
     {nid, Number} ->
       Number
   after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
-    util:logging(?CLIENT_LOGGING_FILE, "getMSG did not received response frome Server at" ++ util:to_String(erlang:timestamp()))
+    util:logging(?CLIENT_LOGGING_FILE, "getMSG hat keine Antwort vom Server bekommen um" ++ util:to_String(erlang:timestamp()))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-dropMSG(Servername, Servernode, Interval, ClientName) ->
+dropMSG(Servername, Servernode, Interval, ClientName, OwnMsgs) ->
   Msg = "Gruppe:" ++
     util:to_String(?GRUPPE) ++
     "; | Team:" ++
@@ -197,8 +225,9 @@ dropMSG(Servername, Servernode, Interval, ClientName) ->
     "; | Rechnername:" ++
     util:to_String(?RECHNER_NAME),
   INNr = getMSGID(Servername, Servernode),
+   NewOwn = OwnMsgs ++ INNr,
   timer:sleep(trunc(Interval * 1000)),
   TSClientout = erlang:timestamp(),
   {Servername, Servernode} ! {dropmessage, [INNr, Msg, TSClientout]},
-  util:logging(list_to_atom(string:uppercase(ClientName) ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(INNr) ++ "te_Nachricht. C Out: " ++ util:to_String(calendar:now_to_local_time(TSClientout)) ++ ". | gesendet\n"),
-  TSClientout.
+  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(INNr) ++ "te_Nachricht. C Out: " ++ util:to_String(calendar:now_to_local_time(TSClientout)) ++ ". | gesendet\n"),
+  NewOwn.

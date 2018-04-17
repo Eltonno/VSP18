@@ -49,7 +49,7 @@ getClientNNr(_CMEM, _ClientID, false) -> 1;
 %% known client, time exceeded? YES -> 1, NO, NNr + 1
 getClientNNr({CMEMList, RemTime}, ClientID, true) ->
   {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
-  NNr + 1
+  NNr + 1.
 %%  Duration = ClientTimestamp + RemTime,
 %%  Now = vsutil:getUTC(),
 %%  Comparisson = vsutil:compareUTC(Duration, Now),

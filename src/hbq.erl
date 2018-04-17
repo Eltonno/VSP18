@@ -1,10 +1,10 @@
 %%%-------------------------------------------------------------------
 %%% @author Elton
-%%% @copyright (C) 2015, <COMPANY>
+%%% @copyright (C) 2018, <COMPANY>
 %%% @doc
 %%%
 %%% @end
-%%% Created : 02. Apr 2015 10:06 AM
+%%% Created : 04. Apr 2018 16:45
 %%%-------------------------------------------------------------------
 -module(hbq).
 -author("Elton").
@@ -19,16 +19,6 @@
 % {[{NNr, Msg, TSclientout, TShbqin}}, ...]}
 % {[Int, String, {Int, Int, Int}, {Int, Int, Int}}, ...]}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-%start()
-
-%% Definition: Startet einen neuen HBQ-Prozess, der die HBQ verwaltet und alleinigen Zugriff auf die DLQ besitzt.
-
-% pre: Server-Prozess ist gestartet
-% post: Es wurde ein neuer HBQ-Prozess gestartet der nun vom Server verwendet werden kann
-% return: hbq-process started als Atom sonst eine sinnvolle Error-Meldung
 
 
 start() ->
@@ -48,13 +38,6 @@ start() ->
 .
 
 
-% loop()
-
-% Die Hauptschleife der HBQ wartet auf Anfragen bzgl. des Servers.
-
-% pre: keine
-% post: der Prozess wurde erfolgreich terminiert
-% return: hbq-process terminated als Atom
 
 loop(DlqLimit, HBQname, HBQ, DLQ) ->
   receive
@@ -120,13 +103,6 @@ loop(DlqLimit, HBQname, HBQ, DLQ) ->
   end.
 
 
-% initHBQandDLQ(ServerPID)
-
-%% Initialisiert die HBQ und DLQ. Ruft die Methode „initDLQ(Size, Datei)“ in dem Modul in der DLQ auf
-
-% pre: Ein korrekt Size und eine korrekte ServerPID wurde uebegeben
-% post: ein 2-Tupel wurde erstellt. Das 1. Element ist die HBQ und das 2. Element die DLQ.
-% return: 2-Tupel: {[], DLQ}
 
 initHBQandDLQ(Size, ServerPID) ->
   util:logging("Die HBQ und DLQ wurden initialisiert",?QUEUE_LOGGING_FILE),
@@ -135,13 +111,7 @@ initHBQandDLQ(Size, ServerPID) ->
   {[], DLQ}.
 
 
-% pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout])
 
-% Fügt eine Nachricht an die HBQ an
-
-% pre: ServerPID mit der der Server erreicht werden kann, sowie eine korrekte OldHBQ.
-% post: Der alten HBQ wurde ein neues Element beigefügt und der Server hat eine Nachricht erhalten.
-% return: NewHBQ
 
 pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
   Tshbqin = erlang:timestamp(),
@@ -151,13 +121,6 @@ pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
   ServerPID ! {reply, ok},
   SortedHBQ.
 
-% deliverMSG(ServerPID, DLQ, NNr, ToClient), erweitert fuer logging
-
-% Definition: Beauftragt die DLQ die Nachricht mit geforderter NNr an den Client (ToClient) zu senden.
-
-% pre: korrekte Server-und ClientPID unter die beide Prozesse zu erreichen sind
-% post: Der Client hat eine neue Nachricht erhalten, die DLQ ist um eine Nachricht kleiner geworden und dem Server wurde die Nachricht verschickt
-% return: Atom ok wird zurückgegeben
 
 deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
   {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ), %und Datei
@@ -165,30 +128,15 @@ deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
   ServerPID ! {reply, MSGNr}.
 
 
-% dellHBQ(ServerPID)
-
-% Definition: Terminiert den HBQ-Prozess und schickt dem Server eine Bestaetigung
-
-% pre: korrekte ServerPID
-% post: der Prozess wurde erfolgreich beendet
-% return: Atom ok wird zurückgegeben
 
 dellHBQ(ServerPID, HBQname) ->
   erlang:unregister(HBQname),
   %%%%%%% DLQ Löschen
   ServerPID ! {reply, ok}.
 
-% pushSeries(HBQ, {Size, Queue})
-
-% Prüft auf Nachrichten / Nachrichtenfolgen, die ohne eine Lücke zu bilden in die DLQ eingefügt werden können.
-
-% pre: korrekt initialisierte HBQ- und DLQ-Datenstruktur
-% post: veränderte HBQ- und DLQ-Datenstruktur
-% return: {HBQ, DLQ} als 2-Tupel
 
 pushSeries(HBQ, {Size, Queue}) ->
 
-  %TODO TEST THAT SHEET WITH UNSORTED DLQ CAUSE DLQ SHOULD BE ALREADY SORTED
   ExpectedMessageNumber = dlq:expectedNrDLQ(dlq:sortDLQ({Size, Queue})),
 
   {CurrentLastMessageNumber, Msg, TSclientout, TShbqin} = head(HBQ),
@@ -210,13 +158,6 @@ pushSeries(HBQ, {Size, Queue}) ->
   {NHBQ, NDLQ}.
 
 
-% push_consistent_block_to_dlq(ConsistentBlock,DLQ)
-
-% Ubergibt einen konsistenten Block an die DLQ
-
-% pre: Einen konsistenten Block an Nachrichten und die DLQ
-% post: veränderte HBQ- und DLQ-Datenstruktur
-% return: {HBQ, DLQ} als 2-Tupel
 
 push_consisten_block_to_dlq(ConsistentBlock, DLQ) ->
   push_consisten_block_to_dlq_(ConsistentBlock, DLQ).
@@ -229,13 +170,6 @@ push_consisten_block_to_dlq_([], DLQ) ->
   DLQ.
 
 
-% create_consisten_block(ConsistentBlock,DLQ)
-
-% Erstellt einen konsistenten Nachrichtenblock aus einer Liste
-
-% pre: Eine Liste
-% post: Die laengste aufeinanderfolgende Nachrichtennummer folge aus der Liste wurde in die DLQ eingefuegt
-% return: Die laengste aufeinanderfolgende Nachrichtennummer folge aus der Liste
 
 
 create_consistent_block([H | T]) ->
