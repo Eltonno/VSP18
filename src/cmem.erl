@@ -124,7 +124,7 @@ getClientNNr([RemTime, CMEM], ClientID) ->
     Existent ->
       {ClientID, LNNr, Time} = lists:keyfind(ClientID, 1, CMEM),
       Duration = Time + RemTime,
-      Now = werkzeug:getUTC(),
+      Now = vsutil:getUTC(),
       if
         Duration >= Now -> LNNr + 1;
         true -> 1

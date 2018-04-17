@@ -160,7 +160,7 @@ pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
 % return: Atom ok wird zurückgegeben
 
 deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
-  {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ),
+  {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ), %und Datei
   % ToClient ! {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated},
   ServerPID ! {reply, MSGNr}.
 
@@ -175,6 +175,7 @@ deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
 
 dellHBQ(ServerPID, HBQname) ->
   erlang:unregister(HBQname),
+  %%%%%%% DLQ Löschen
   ServerPID ! {reply, ok}.
 
 % pushSeries(HBQ, {Size, Queue})
