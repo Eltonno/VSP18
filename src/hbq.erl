@@ -9,7 +9,7 @@
 -module(hbq).
 -author("Elton").
 -export([initHBQandDLQ/2, startHBQ/0]).
--define(QUEUE_LOGGING_FILE, "HB-DLQ" ++ os:getenv("Userdomain") ++".log").
+-define(QUEUE_LOGGING_FILE, "HB-DLQ@" ++ os:getenv("Userdomain") ++".log").
 
 
 
@@ -34,12 +34,12 @@ startHBQ() ->
       "registriert \n"
   ),
 
-  loop(DlqLimit, HBQname, [], [])
+  loop(DlqLimit, HBQname, [], [], DlqLimit)
 .
 
 
 
-loop(DlqLimit, HBQname, HBQ, DLQ) ->
+loop(DlqLimit, HBQname, HBQ, DLQ, Size) ->
   receive
 
     {ServerPID, {request, initHBQ}} ->
@@ -49,15 +49,16 @@ loop(DlqLimit, HBQname, HBQ, DLQ) ->
           util:to_String( {_HBQ, _DLQ}) ++
           "\n"
       ),
-      loop(DlqLimit, HBQname, _HBQ, _DLQ);
+      loop(DlqLimit, HBQname, _HBQ, _DLQ, Size);
     {ServerPID, {request, pushHBQ, [NNr, Msg, TSclientout]}} ->
       _NewHBQ = pushHBQ(ServerPID, HBQ, [NNr, Msg, TSclientout]),
-      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ),
-      loop(DlqLimit, HBQname, NewHBQ, NewDLQ);
+      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ, Size),
+      loop(DlqLimit, HBQname, NewHBQ, NewDLQ, Size);
     {ServerPID, {request, deliverMSG, NNr, ToClient}} ->
-      dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
-      deliverMSG(ServerPID, DLQ, NNr, ToClient),
-      loop(DlqLimit, HBQname, HBQ, DLQ);
+      SendNNr = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
+      util:logging(?QUEUE_LOGGING_FILE, util:to_String(SendNNr)),
+      ServerPID !  {reply, SendNNr},
+      loop(DlqLimit, HBQname, HBQ, DLQ, Size);
     {ServerPID, {request, dellHBQ}} ->
       erlang:unregister(HBQname),
       dlq:delDLQ(DLQ),
@@ -80,31 +81,22 @@ pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
   ServerPID ! {reply, ok},
   SortedHBQ.
 
+pushSeries(HBQ, DLQ, Size) ->
 
-deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
-  {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
-  % ToClient ! {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated},
-  ServerPID ! {reply, MSGNr}.
-
-pushSeries(HBQ, {Queue, Size}) ->
-
-  ExpectedMessageNumber = dlq:expectedNrDLQ(dlq:sortDLQ({Queue, Size})),
+  ExpNNr = dlq:expectedNr(DLQ),
 
   {CurrentLastMessageNumber, Msg, TSclientout, TShbqin} = head(HBQ),
 
-  {NHBQ, NDLQ} = case {ExpectedMessageNumber == CurrentLastMessageNumber, two_thirds_reached(HBQ, Size)} of
+  {NHBQ, NDLQ} = case {ExpNNr == CurrentLastMessageNumber, two_thirds_reached(HBQ, Size)} of
                    {true, _} ->
-                     util:logging(?QUEUE_LOGGING_FILE, 'hier wird push2DLQ ausgeführt true,true im tupel \n'),
-                     NewDLQ = dlq:push2DLQ({CurrentLastMessageNumber, Msg, TSclientout, TShbqin}, {Size, Queue}, ?QUEUE_LOGGING_FILE),
+                     NewDLQ = dlq:push2DLQ([CurrentLastMessageNumber, Msg, TSclientout, TShbqin], DLQ, ?QUEUE_LOGGING_FILE),
                      NewHBQ = lists:filter(fun({Nr, _, _, _}) -> Nr =/= CurrentLastMessageNumber end, HBQ),
                      {NewHBQ, NewDLQ};
                    {false, false} ->
-                     util:logging(?QUEUE_LOGGING_FILE, 'hier wird nur zurückgegeben false,false im tupel \n'),
-                     {HBQ, {Size, Queue}};
+                     {HBQ, DLQ};
                    {false, true} ->
-                     util:logging(?QUEUE_LOGGING_FILE, 'hier wird consistent block false,true im tupel \n'),
                      {ConsistentBlock, NewHBQ} = create_consistent_block(HBQ),
-                     {NewHBQ, push_consisten_block_to_dlq(ConsistentBlock, {Size, Queue})}
+                     {NewHBQ, push_consisten_block_to_dlq(ConsistentBlock, DLQ)}
                  end,
   {NHBQ, NDLQ}.
 
@@ -168,5 +160,5 @@ two_thirds_reached(HBQ, Size) ->
 sortHBQ(Queue) ->
   ORDER = fun({NNr, _, _, _}, {_NNr, _, _, _}) ->
     NNr < _NNr end,
-  lists:usort(ORDER, Queue).
+  lists:sort(ORDER, Queue).
 

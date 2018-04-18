@@ -9,7 +9,7 @@
 -module(server).
 -author("Elton").
 
--export([start/0,loop/9]).
+-export([start/0,loop/8]).
 
 -define(SERVER_LOGGING_FILE, "Server@" ++ os:getenv("USERDOMAIN")).
 -define(MAXIMAL_RESPONSE_TIME_BEFORE_ERROR, 10000).
@@ -21,7 +21,7 @@ start() ->
   ServerPID = spawn(?MODULE,loop,[Latency,Clientlifetime,Servername,HBQname,HBQnode,CMEM,1,erlang:timestamp()]),
   register(Servername, ServerPID),
   util:logging(?SERVER_LOGGING_FILE, "Server wurde registriert\n"),
-  {HBQname, HBQnode} ! {self(), hbq:start()},
+  spawn(HBQnode, HBQname, hbq:startHBQ(), []),
   {HBQname, HBQnode} ! {self(), {request, initHBQ}}
 %%  util:logging(?SERVER_LOGGING_FILE,
 %%    "Server hat die CMEM initializiert, der INHALT:" ++
