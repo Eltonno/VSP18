@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="b013d793-0f7a-440b-8259-c0e26f4f42a6" name="Default" comment="">
+      <change beforePath="" afterPath="$PROJECT_DIR$/src/client.cfg" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/src/server.cfg" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/src/server.erl" afterPath="$PROJECT_DIR$/src/server.erl" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -20,8 +23,8 @@
       <file leaf-file-name="client.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/client.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
-              <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+            <state relative-caret-position="2289">
+              <caret line="154" column="38" lean-forward="true" selection-start-line="154" selection-start-column="38" selection-end-line="154" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -47,11 +50,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="server.erl" pinned="false" current-in-tab="false">
+      <file leaf-file-name="server.erl" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/server.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
-              <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+            <state relative-caret-position="406">
+              <caret line="32" column="1" lean-forward="true" selection-start-line="32" selection-start-column="1" selection-end-line="32" selection-end-column="1" />
               <folding />
             </state>
           </provider>
@@ -60,8 +63,8 @@
       <file leaf-file-name="hbq.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/hbq.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
-              <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+            <state relative-caret-position="1477">
+              <caret line="86" column="0" lean-forward="true" selection-start-line="86" selection-start-column="0" selection-end-line="86" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -70,18 +73,18 @@
       <file leaf-file-name="cmem.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cmem.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
-              <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+            <state relative-caret-position="567">
+              <caret line="27" column="74" lean-forward="true" selection-start-line="27" selection-start-column="74" selection-end-line="27" selection-end-column="74" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="dlq.erl" pinned="false" current-in-tab="true">
+      <file leaf-file-name="dlq.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/dlq.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="177">
-              <caret line="28" column="27" lean-forward="true" selection-start-line="28" selection-start-column="27" selection-end-line="28" selection-end-column="27" />
+            <state relative-caret-position="483">
+              <caret line="26" column="92" lean-forward="true" selection-start-line="26" selection-start-column="92" selection-end-line="26" selection-end-column="92" />
               <folding />
             </state>
           </provider>
@@ -98,10 +101,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>logging</find>
-      <find>sendMSG</find>
-      <find>expectedNrDLQ</find>
-      <find>@</find>
       <find>hello</find>
       <find>RECHNER_NAME</find>
       <find>getMsg</find>
@@ -125,9 +124,13 @@
       <find>update</find>
       <find>sendMessages</find>
       <find>sendMSGID</find>
-      <find>{Size, Queue}</find>
       <find>diffTS</find>
       <find>upper</find>
+      <find>{Size, Queue}</find>
+      <find>ConfigListe</find>
+      <find>push_consisten_block_to_dlq_</find>
+      <find>pushSeries</find>
+      <find>Datei</find>
     </findStrings>
     <replaceStrings>
       <replace>string:uppercase(ClientName) ++ &quot;@&quot; ++ ?RECHNER_NAME ++ &quot;.log&quot;</replace>
@@ -135,6 +138,7 @@
       <replace>readerLOG</replace>
       <replace>getMSG(Servername, Servernode, ClientName, CID)</replace>
       <replace>timestamp</replace>
+      <replace>Configfile</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -148,11 +152,11 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/server.erl" />
-        <option value="$PROJECT_DIR$/src/client.erl" />
-        <option value="$PROJECT_DIR$/src/hbq.erl" />
-        <option value="$PROJECT_DIR$/src/cmem.erl" />
         <option value="$PROJECT_DIR$/src/dlq.erl" />
+        <option value="$PROJECT_DIR$/src/client.erl" />
+        <option value="$PROJECT_DIR$/src/cmem.erl" />
+        <option value="$PROJECT_DIR$/src/hbq.erl" />
+        <option value="$PROJECT_DIR$/src/server.erl" />
       </list>
     </option>
   </component>
@@ -163,8 +167,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="806" />
-    <option name="y" value="-32" />
+    <option name="x" value="-31" />
+    <option name="y" value="-18" />
     <option name="width" value="1920" />
     <option name="height" value="823" />
   </component>
@@ -361,6 +365,24 @@
       <module name="" />
       <envs />
     </configuration>
+    <configuration name="server.loop" type="ErlangApplicationRunConfiguration" factoryName="Erlang Application" temporary="true" show_console_on_std_err="false" show_console_on_std_out="false">
+      <option name="debugOptions">
+        <ErlangDebugOptions>
+          <option name="autoUpdateModulesNotToInterpret" value="true" />
+          <option name="modulesNotToInterpret">
+            <set />
+          </option>
+        </ErlangDebugOptions>
+      </option>
+      <option name="erlFlags" value="" />
+      <option name="moduleAndFunction" value="server loop" />
+      <option name="params" value="" />
+      <option name="useTestCodePath" value="false" />
+      <option name="workDirectory" />
+      <module name="VSP_1">
+        <option name="moduleName" value="VSP_1" />
+      </module>
+    </configuration>
     <configuration default="true" type="JUnit" factoryName="JUnit">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <module name="" />
@@ -421,6 +443,11 @@
       <option name="PROGRAM_PARAMETERS" />
       <predefined_log_file id="idea.log" enabled="true" />
     </configuration>
+    <recent_temporary>
+      <list size="1">
+        <item index="0" class="java.lang.String" itemvalue="Erlang Application.server.loop" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SbtLocalSettings">
     <option name="externalProjectsViewState">
@@ -442,7 +469,7 @@
       <updated>1522853009251</updated>
       <workItem from="1522853016408" duration="762000" />
       <workItem from="1523524002245" duration="21358000" />
-      <workItem from="1523800108851" duration="66937000" />
+      <workItem from="1523800108851" duration="86312000" />
     </task>
     <task id="LOCAL-00001" summary="weekend is very much a bad thing this time">
       <created>1523730782597</created>
@@ -514,11 +541,25 @@
       <option name="project" value="LOCAL" />
       <updated>1523987610403</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="stand 6:21">
+      <created>1524025289761</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1524025289761</updated>
+    </task>
+    <task id="LOCAL-00012" summary="stand 6:21">
+      <created>1524031384139</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1524031384139</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="89057000" />
+    <option name="totallyTimeSpent" value="108432000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
@@ -536,8 +577,9 @@
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25349087" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25349087" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.407767" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Learn" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3296328" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -550,7 +592,6 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -567,7 +608,8 @@
     <MESSAGE value="client log almost finished" />
     <MESSAGE value="cmem edited" />
     <MESSAGE value="some small changes" />
-    <option name="LAST_COMMIT_MESSAGE" value="some small changes" />
+    <MESSAGE value="stand 6:21" />
+    <option name="LAST_COMMIT_MESSAGE" value="stand 6:21" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -662,14 +704,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/client.erl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/util.erl">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="147">
@@ -678,34 +712,42 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/server.erl">
+    <entry file="file://$PROJECT_DIR$/src/client.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/hbq.erl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+        <state relative-caret-position="2289">
+          <caret line="154" column="38" lean-forward="true" selection-start-line="154" selection-start-column="38" selection-end-line="154" selection-end-column="38" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/cmem.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="7" column="70" lean-forward="false" selection-start-line="7" selection-start-column="70" selection-end-line="7" selection-end-column="70" />
+        <state relative-caret-position="567">
+          <caret line="27" column="74" lean-forward="true" selection-start-line="27" selection-start-column="74" selection-end-line="27" selection-end-column="74" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/dlq.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="177">
-          <caret line="28" column="27" lean-forward="true" selection-start-line="28" selection-start-column="27" selection-end-line="28" selection-end-column="27" />
+        <state relative-caret-position="483">
+          <caret line="26" column="92" lean-forward="true" selection-start-line="26" selection-start-column="92" selection-end-line="26" selection-end-column="92" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/hbq.erl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1477">
+          <caret line="86" column="0" lean-forward="true" selection-start-line="86" selection-start-column="0" selection-end-line="86" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/server.erl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="406">
+          <caret line="32" column="1" lean-forward="true" selection-start-line="32" selection-start-column="1" selection-end-line="32" selection-end-column="1" />
           <folding />
         </state>
       </provider>
