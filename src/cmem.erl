@@ -17,29 +17,19 @@
 
 initCMEM(RemTime, Datei) ->
   util:logging(Datei, "CMEM initialisiert\nRemTime is: " ++ util:to_String(RemTime) ++ "\n"),
-  {[], RemTime}.
+  {RemTime, []}.
 
 delCMEM(_CMEM) ->
   ok.
 
-
-% updateClient(CMEM, ClientID, NNr, Datei)
-%% Definition: Speichert/Aktualisiert im CMEM die ClientID mit der NNr.
-
-%% {Clientlifetime,CMEM} {Int,[{<PID>,Int,{Int,Int,Int}}]}
-%% Clientlifetime,CMEM} {Size,[{ClientPID,LastMessageID,LastMessageTimestamp}]}
-
-
-
-
-updateClient({CMEM,RemTime}, ClientID, NNr, Datei) ->
+updateClient({RemTime, CMEM}, ClientID, NNr, Datei) ->
   ClientTS = vsutil:getUTC(),
   util:logging(Datei, lists:concat(["CMEM>>> Client ", pid_to_list(ClientID), " updated (", NNr, "/", ClientTS, ")\n"])),
   {lists:keystore(ClientID, 1, CMEM, {ClientID, NNr, ClientTS}), RemTime}.
 
 
 %% Request which NNr the client may obtain next
-getClientNNr({CMEMList, RemTime}, ClientID) ->
+getClientNNr({RemTime, CMEMList}, ClientID) ->
   Existent = lists:keymember(ClientID, 1, CMEMList),
   getClientNNr({CMEMList, RemTime}, ClientID, Existent).
 
@@ -47,7 +37,7 @@ getClientNNr({CMEMList, RemTime}, ClientID) ->
 getClientNNr(_CMEM, _ClientID, false) -> 1;
 
 %% known client, time exceeded? YES -> 1, NO, NNr + 1
-getClientNNr({CMEMList, RemTime}, ClientID, true) ->
+getClientNNr({RemTime, CMEMList}, ClientID, true) ->
   {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
   NNr + 1.
 %%  Duration = ClientTimestamp + RemTime,

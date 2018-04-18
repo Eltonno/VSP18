@@ -196,7 +196,7 @@ getMSG(Servername, Servernode, ClientName, OwnMsgs) ->
   receive
     {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], false} ->
       readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs),
-      getMSG(Servername, Servernode, ClientName);
+      getMSG(Servername, Servernode, ClientName, OwnMsgs);
     {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], true} ->
       readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs),
       ok

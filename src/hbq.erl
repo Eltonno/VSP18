@@ -8,8 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(hbq).
 -author("Elton").
--export([initHBQandDLQ/2, start/0]).
--define(QUEUE_LOGGING_FILE, "HBQ.txt").
+-export([initHBQandDLQ/2, startHBQ/0]).
+-define(QUEUE_LOGGING_FILE, "HB-DLQ" ++ os:getenv("Userdomain") ++".log").
 
 
 
@@ -21,7 +21,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-start() ->
+startHBQ() ->
   {ok, ConfigListe} = file:consult('server.cfg'),
   {ok, HBQname} = vsutil:get_config_value(hbqname, ConfigListe),
   {ok, DlqLimit} = vsutil:get_config_value(dlqlimit, ConfigListe),
@@ -43,69 +43,30 @@ loop(DlqLimit, HBQname, HBQ, DLQ) ->
   receive
 
     {ServerPID, {request, initHBQ}} ->
-
-
       {_HBQ, _DLQ} = initHBQandDLQ(DlqLimit, ServerPID),
-
       util:logging(?QUEUE_LOGGING_FILE,
         "Die HBQ && DLQ wurden Initialisiert, der Inhalt {_HBQ, _DLQ}: " ++
           util:to_String( {_HBQ, _DLQ}) ++
           "\n"
-      )
-
-
-      , loop(DlqLimit, HBQname, _HBQ, _DLQ)
-  ;
+      ),
+      loop(DlqLimit, HBQname, _HBQ, _DLQ);
     {ServerPID, {request, pushHBQ, [NNr, Msg, TSclientout]}} ->
       _NewHBQ = pushHBQ(ServerPID, HBQ, [NNr, Msg, TSclientout]),
-
-      util:logging(?QUEUE_LOGGING_FILE,
-        "Die HBQ hat einen request für pushHBQ erhalten, mit der Message:" ++
-          util:to_String([NNr, Msg, TSclientout]) ++
-          "Die Nachricht wurde in die HBQ eingetragen, die HBQ vor dem Eintragen:" ++
-          util:to_String(HBQ) ++
-          "Die  die _NewHBQ nach dem Eintragen:" ++
-          util:to_String(_NewHBQ) ++
-          "\n"
-      )
-
-      , {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ)
-
-      , util:logging(?QUEUE_LOGGING_FILE,
-        "Es wurde PushSeries für  (_NewHBQ, DLQ):" ++
-          util:to_String([_NewHBQ, DLQ]) ++
-          " ausgeführt. Das Ergebnis von PushSeries  {NewHBQ, NewDLQ}:" ++
-          util:to_String({NewHBQ, NewDLQ}) ++
-          "\n"
-      )
-
-      , loop(DlqLimit, HBQname, NewHBQ, NewDLQ)
-
-  ;
+      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ),
+      loop(DlqLimit, HBQname, NewHBQ, NewDLQ);
     {ServerPID, {request, deliverMSG, NNr, ToClient}} ->
-
-      util:logging(?QUEUE_LOGGING_FILE,
-        "Es wurde deliverMSG für die MessageNr:" ++
-          util:to_String(NNr) ++
-          " Die DLQ mit dem Inhalt:" ++
-          util:to_String(DLQ) ++
-          " wird mit dem ausliefern in deliverMSG beauftragt" ++
-          "\n"
-      ),
-
-      deliverMSG(ServerPID, DLQ, NNr, ToClient)
-      , loop(DlqLimit, HBQname, HBQ, DLQ)
-  ;
+      dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
+      deliverMSG(ServerPID, DLQ, NNr, ToClient),
+      loop(DlqLimit, HBQname, HBQ, DLQ);
     {ServerPID, {request, dellHBQ}} ->
-      dellHBQ(ServerPID, HBQname)
-
-
+      erlang:unregister(HBQname),
+      dlq:delDLQ(DLQ),
+      ServerPID ! {reply, ok}
   end.
 
 
 
 initHBQandDLQ(Size, ServerPID) ->
-  util:logging("Die HBQ und DLQ wurden initialisiert",?QUEUE_LOGGING_FILE),
   DLQ = dlq:initDLQ(Size, ?QUEUE_LOGGING_FILE),
   ServerPID ! {reply, ok},
   {[], DLQ}.
@@ -115,29 +76,19 @@ initHBQandDLQ(Size, ServerPID) ->
 
 pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
   Tshbqin = erlang:timestamp(),
-  %erlang:display("das ist die queue"++util:to_String(OldHBQ)),
-  %erlang:display("das ist die neue queue"++util:to_String(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}])),
   SortedHBQ = sortHBQ(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}]),
   ServerPID ! {reply, ok},
   SortedHBQ.
 
 
 deliverMSG(ServerPID, DLQ, NNr, ToClient) ->
-  {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ), %und Datei
+  {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated} = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
   % ToClient ! {reply, [MSGNr, Msg, TSclientout, TShbqin, TSdlqin, TSdlqout], Terminated},
   ServerPID ! {reply, MSGNr}.
 
+pushSeries(HBQ, {Queue, Size}) ->
 
-
-dellHBQ(ServerPID, HBQname) ->
-  erlang:unregister(HBQname),
-  %%%%%%% DLQ Löschen
-  ServerPID ! {reply, ok}.
-
-
-pushSeries(HBQ, {Size, Queue}) ->
-
-  ExpectedMessageNumber = dlq:expectedNrDLQ(dlq:sortDLQ({Size, Queue})),
+  ExpectedMessageNumber = dlq:expectedNrDLQ(dlq:sortDLQ({Queue, Size})),
 
   {CurrentLastMessageNumber, Msg, TSclientout, TShbqin} = head(HBQ),
 
