@@ -10,7 +10,7 @@
 -author("Elton").
 
 
--export([start/0]).
+-export([start/0,loop/9]).
 
 
 -define(GRUPPE, '3').
@@ -60,7 +60,10 @@ start() ->
 spawner(0, _Lifetime, _Servername, _Servernode, _Sendinterval) ->
   ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
-  spawn(fun() -> init(Lifetime, Servername, Servernode, Sendinterval, ("Client" ++ util:to_String(Clients)))end),
+  ClientPID = spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ]),
+  register(list_to_atom("Client_" ++ util:to_String(Clients)), ClientPID),
+  util:logging(list_to_atom(("Client_" ++ util:to_String(Clients)) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
+    util:to_String(("Client_" ++ util:to_String(Clients))) ++ " wurde registriert. ~n"),
   spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,15 +80,8 @@ readConfig() ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-init(Lifetime, Servername, Servernode, Sendinterval,ClientName) ->
-  erlang:register(list_to_atom(ClientName),client,loop(ClientName,Lifetime,Servername,Servernode,Sendinterval,erlang:timestamp(),0,?REDAKTEUR_ATOM, []),[]),
-  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
-    util:to_String(ClientName) ++ " wurde registriert. ~n").
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 forgottenMessage(NNr, Timestamp, ClientName) ->
-  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ util:to_String(Timestamp) ++ " wurde vergessen.\n").
+  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ io:format("~s~n",[print_time:format_utc_timestamp(Timestamp)]) ++ " wurde vergessen.\n").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -112,7 +108,7 @@ loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, Tran
           end
       end;
     false ->
-      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "ClientID-X Lifetime is over - terminating at" ++ util:to_String(erlang:timestamp()) ++ "\n"),
+      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(ClientName) ++ " exceeded it's lifetime at " ++ util:to_String(erlang:timestamp()) ++ "\n"),
       erlang:exit("Lifetime is over")
   end.
 
@@ -137,32 +133,33 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
     true ->
       Boolean = vsutil:lessTS(TSdlqout, TSclientin),
       Member = lists:member(NNr, OwnMsgs),
-      if
-        Member ->
-          if
-            Boolean ->
-              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
-                util:to_String(NNr) ++
-                  "te_Nachricht. C Out:" ++
-                  util:to_String(TSclientout) ++
-                  "| ; HBQ In:" ++
-                  util:to_String(TShbqin) ++
-                  "| ; DLQ Out:" ++
-                  util:to_String(TSdlqout) ++
-                  "|***Nachricht aus der Zukunft ^^ *******\n");
-            true ->
-              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
-                util:to_String(NNr) ++
-                  "te_Nachricht. C Out:" ++
-                  util:to_String(TSclientout) ++
-                  "| ; HBQ In:" ++
-                  util:to_String(TShbqin) ++
-                  "| ; DLQ Out:" ++
-                  util:to_String(TSdlqout) ++
-                  "*******\n")
-          end;
-        true ->
-          Boolean = vsutil:lessTS(TSdlqout, TSclientin),
+      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),util:to_String(Member)),
+      %%case Member of
+        %%true->
+%%          if
+%%            Boolean ->
+%%              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+%%                util:to_String(NNr) ++
+%%                  "te_Nachricht. C Out:" ++
+%%                  util:to_String(TSclientout) ++
+%%                  "| ; HBQ In:" ++
+%%                  util:to_String(TShbqin) ++
+%%                  "| ; DLQ Out:" ++
+%%                  util:to_String(TSdlqout) ++
+%%                  "|***Nachricht aus der Zukunft ^^ *******\n");
+%%            true ->
+%%              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+%%                util:to_String(NNr) ++
+%%                  "te_Nachricht. C Out:" ++
+%%                  util:to_String(TSclientout) ++
+%%                  "| ; HBQ In:" ++
+%%                  util:to_String(TShbqin) ++
+%%                  "| ; DLQ Out:" ++
+%%                  util:to_String(TSdlqout) ++
+%%                  "*******\n")
+%%          end;
+%%        false ->
+%%          Boolean = vsutil:lessTS(TSdlqout, TSclientin),
           if
             Boolean ->
               util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
@@ -185,8 +182,8 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
                   util:to_String(TSdlqout) ++
                   "\n")
           end
-      end
-  end,
+      end,
+ %% end,
   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,8 +197,6 @@ getMSG(Servername, Servernode, ClientName, OwnMsgs) ->
     {reply, [NNr, Msg, TSclientout, TShbqin, _TSdlqin, TSdlqout], true} ->
       readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs),
       ok
-  after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
-    util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Leser bekam keine Antwort um " ++ util:to_String(erlang:timestamp()))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -211,8 +206,6 @@ getMSGID(Servername, Servernode) ->
   receive
     {nid, Number} ->
       Number
-  after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
-    util:logging(?CLIENT_LOGGING_FILE, "getMSG hat keine Antwort vom Server bekommen um" ++ util:to_String(erlang:timestamp()))
   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -21,16 +21,7 @@ start() ->
   ServerPID = spawn(?MODULE,loop,[Latency,Clientlifetime,Servername,HBQname,HBQnode,CMEM,1,erlang:timestamp()]),
   register(Servername, ServerPID),
   util:logging(?SERVER_LOGGING_FILE, "Server wurde registriert\n"),
-  %%spawn(HBQnode, HBQname,
-  HBQ = hbq:startHBQ(),
-  %%[]),
-  {HBQname, HBQnode} ! {request, initHBQ}
-%%  util:logging(?SERVER_LOGGING_FILE,
-%%    "Server hat die CMEM initializiert, der INHALT:" ++
-%%      util:to_String(CMEM) ++
-%%      "\n"
-%%  )
-.
+  {HBQname, HBQnode} ! {ServerPID, {request, initHBQ}}.
 
 readConfig() ->
   {ok, Configfile} = file:consult("server.cfg"),

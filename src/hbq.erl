@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(hbq).
 -author("Elton").
--export([initHBQandDLQ/2, startHBQ/0]).
+-export([startHBQ/0,loop/3]).
 -define(QUEUE_LOGGING_FILE, "HB-DLQ@" ++ os:getenv("Userdomain") ++".log").
 
 
@@ -26,51 +26,34 @@ startHBQ() ->
   {ok, HBQname} = vsutil:get_config_value(hbqname, ConfigListe),
   {ok, DlqLimit} = vsutil:get_config_value(dlqlimit, ConfigListe),
 
-  erlang:register(HBQname, self()),
+  HBQPID = spawn(?MODULE, loop, [DlqLimit, [], []]),
+  erlang:register(HBQname, HBQPID).
 
-  util:logging(?QUEUE_LOGGING_FILE,
-    "Die HBQ wurde unter dem Namen:" ++
-      util:to_String(HBQname) ++
-      "registriert \n"
-  ),
-
-  loop(DlqLimit, HBQname, [], [], DlqLimit)
-.
-
-
-
-loop(DlqLimit, HBQname, HBQ, DLQ, Size) ->
+loop(DlqLimit, HBQ, DLQ) ->
   receive
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, initHBQ}} ->
-      {_HBQ, _DLQ} = initHBQandDLQ(DlqLimit, ServerPID),
-      util:logging(?QUEUE_LOGGING_FILE,
-        "Die HBQ && DLQ wurden Initialisiert, der Inhalt {_HBQ, _DLQ}: " ++
-          util:to_String( {_HBQ, _DLQ}) ++
-          "\n"
-      ),
-      loop(DlqLimit, HBQname, _HBQ, _DLQ, Size);
+      ServerPID ! {reply,ok},   %%TODO: Hier muss noch dringend das Problem behoben werden.
+                                %%TODO: Einzige Frage ist was wirklich wie zurückgegeben werden muss
+      loop(DlqLimit, [], dlq:initDLQ(DlqLimit, ?QUEUE_LOGGING_FILE));
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, pushHBQ, [NNr, Msg, TSclientout]}} ->
       _NewHBQ = pushHBQ(ServerPID, HBQ, [NNr, Msg, TSclientout]),
-      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ, Size),
-      loop(DlqLimit, HBQname, NewHBQ, NewDLQ, Size);
+      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ, DlqLimit),
+      loop(DlqLimit, NewHBQ, NewDLQ);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, deliverMSG, NNr, ToClient}} ->
       SendNNr = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
       util:logging(?QUEUE_LOGGING_FILE, util:to_String(SendNNr)),
       ServerPID !  {reply, SendNNr},
-      loop(DlqLimit, HBQname, HBQ, DLQ, Size);
+      loop(DlqLimit, HBQ, DLQ);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, dellHBQ}} ->
-      erlang:unregister(HBQname),
       dlq:delDLQ(DLQ),
-      ServerPID ! {reply, ok}
+      ServerPID ! {reply, ok},
+      ok
   end.
 
-
-
-initHBQandDLQ(Size, ServerPID) ->
-  DLQ = dlq:initDLQ(Size, ?QUEUE_LOGGING_FILE),
-  ServerPID ! {reply, ok},
-  {[], DLQ}.
 
 
 
