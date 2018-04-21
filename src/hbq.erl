@@ -9,7 +9,7 @@
 -module(hbq).
 -author("Elton").
 -export([startHBQ/0,loop/3]).
--define(QUEUE_LOGGING_FILE, "HB-DLQ_" ++ erlang:node() ++".log").
+-define(QUEUE_LOGGING_FILE, "HB-DLQ_" ++ atom_to_list(erlang:node()) ++".log").
 
 
 
@@ -38,8 +38,8 @@ loop(DlqLimit, HBQ, DLQ) ->
       loop(DlqLimit, [], dlq:initDLQ(DlqLimit, ?QUEUE_LOGGING_FILE));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, pushHBQ, [NNr, Msg, TSclientout]}} ->
-      _NewHBQ = pushHBQ(ServerPID, HBQ, [NNr, Msg, TSclientout]),
-      {NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ, DlqLimit),
+      {NewHBQ, NewDLQ} = pushHBQ(ServerPID, HBQ, [NNr, Msg, TSclientout], DLQ, DlqLimit),
+      %%{NewHBQ, NewDLQ} = pushSeries(_NewHBQ, DLQ, DlqLimit),
       loop(DlqLimit, NewHBQ, NewDLQ);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, deliverMSG, NNr, ToClient}} ->
@@ -58,75 +58,30 @@ loop(DlqLimit, HBQ, DLQ) ->
 
 
 
-pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout]) ->
+pushHBQ(ServerPID, OldHBQ, [NNr, Msg, TSclientout], DLQ, DlqLimit) ->
   Tshbqin = erlang:timestamp(),
-  SortedHBQ = sortHBQ(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}]),
-  ServerPID ! {reply, ok},
-  SortedHBQ.
-
-pushSeries(HBQ, DLQ, Size) ->
-
-  ExpNNr = dlq:expectedNr(DLQ),
-
-  {CurrentLastMessageNumber, Msg, TSclientout, TShbqin} = head(HBQ),
-
-  {NHBQ, NDLQ} = case {ExpNNr == CurrentLastMessageNumber, two_thirds_reached(HBQ, Size)} of
-                   {true, _} ->
-                     NewDLQ = dlq:push2DLQ([CurrentLastMessageNumber, Msg, TSclientout, TShbqin], DLQ, ?QUEUE_LOGGING_FILE),
-                     NewHBQ = lists:filter(fun({Nr, _, _, _}) -> Nr =/= CurrentLastMessageNumber end, HBQ),
-                     {NewHBQ, NewDLQ};
-                   {false, false} ->
-                     {HBQ, DLQ};
-                   {false, true} ->
-                     {ConsistentBlock, NewHBQ} = create_consistent_block(HBQ),
-                     {NewHBQ, push_consisten_block_to_dlq(ConsistentBlock, DLQ)}
-                 end,
-  {NHBQ, NDLQ}.
-
-
-
-push_consisten_block_to_dlq(ConsistentBlock, DLQ) ->
-  push_consisten_block_to_dlq_(ConsistentBlock, DLQ).
-
-push_consisten_block_to_dlq_([H | T], DLQ) ->
-  NewDLQ = dlq:push2DLQ(H, DLQ, ?QUEUE_LOGGING_FILE),
-  push_consisten_block_to_dlq_(T, NewDLQ);
-
-push_consisten_block_to_dlq_([], DLQ) ->
-  DLQ.
-
-
-
-
-create_consistent_block([H | T]) ->
-  TAIL = erlang:tl(H ++ T),
-  create_consistent_block_(H ++ T, TAIL, [], 0);
-create_consistent_block([]) ->
-  util:logging("create_consistent_block wurde mit einer Leeren HBQ aufgerufen, WTF"),
-  {[], []}.
-
-produce_failure_message(NNr, _NNr) ->
-  {_NNr, "Fehlernachricht von:" ++ NNr ++ " bis" ++ "_NNr", "Error", "Error"}.
-
-create_consistent_block_([H | T], [_H | _T], Accu, Counter) ->
-  {NNr, _, _, _} = H,
-  {_NNr, _, _, _} = _H,
-
-  case {erlang:abs(NNr - _NNr) > 1, Counter == 1} of
-    {true, true} ->
-      {Accu ++ H, _H ++ _T};
-    {true, false} ->
-      NewAccu = Accu ++ produce_failure_message(NNr, _NNr),
-      create_consistent_block_(T, _T, NewAccu, Counter + 1);
-    {false, true} ->
-      create_consistent_block_(T, _T, Accu ++ H, Counter);
-    {false, false} ->
-      create_consistent_block_(T, _T, Accu ++ H, Counter)
-  end;
-
-create_consistent_block_([H | _], [], _, _) ->
-  H.
-
+  DlqNNr = dlq:expectedNr(DLQ),
+  if
+    NNr >= DlqNNr ->
+      SortedHBQ = sortHBQ(OldHBQ ++ [{NNr, Msg, TSclientout, Tshbqin}]),
+      ServerPID ! {reply, ok},
+      {CNNr, CMsg, CTsclientout, CTshbqin} = head(SortedHBQ),
+      TTR = two_thirds_reached(SortedHBQ, DlqLimit),
+      if
+        CNNr == DlqNNr ->
+          NewDlq = dlq:push2DLQ([CNNr, CMsg, CTsclientout, CTshbqin], DLQ, ?QUEUE_LOGGING_FILE),
+          [_|HbqRest] = SortedHBQ,
+          {HbqRest, NewDlq};
+        TTR ->
+          NewDlq = dlq:push2DLQ([CNNr-1, "***Fehlernachricht fuer Nachrichten " ++ util:to_String(DlqNNr) ++ " bis " ++ util:to_String(CNNr-1) ++ " um " ++ util:to_String(erlang:timestamp()) ++ "|.", {0,0,0}, {0,0,0}], DLQ, ?QUEUE_LOGGING_FILE),
+          {SortedHBQ, NewDlq};
+        true ->
+          {SortedHBQ, DLQ}
+      end;
+    true ->
+      util:logging(list_to_atom(?QUEUE_LOGGING_FILE), "Die erhaltene Nachrichtennummer ist zu klein, weshalb die Nachricht verworfen wurde."),
+      {OldHBQ, DLQ}
+  end.
 
 % Helper funktionen fuer die HBQ
 

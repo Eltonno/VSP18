@@ -39,7 +39,6 @@ loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, TimeOfLa
   case (get_timestamp() - TimeOfLastConnection) < Latency * 1000 of
     true ->
       receive
-
         {dropmessage, [NNr, Msg, TSclientout]} ->
           {HBQname, HBQnode} ! {self(), {request, pushHBQ, [NNr, Msg, TSclientout]}},
           receive
@@ -61,24 +60,18 @@ loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, TimeOfLa
           loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR + 1, get_timestamp())
       after
         Latency * 1000 ->
-          shutdownRoutine(HBQname, HBQnode),
+          {HBQname, HBQnode} ! {request, dellHBQ},
+          receive
+            {reply, ok} ->
+              util:logging(?SERVER_LOGGING_FILE, "HBQ wurde terminiert"),
+              util:logging(?SERVER_LOGGING_FILE, "Server wurde terminiert"),
+              ok
+          end,
           util:logging(?SERVER_LOGGING_FILE, "Exterminated"),
           erlang:unregister(Servername)
       end
   end.
 
-
-shutdownRoutine(HBQName, HBQNode) ->
-  {HBQName, HBQNode} ! self(),
-  receive
-    {reply, ok} ->
-      util:logging(?SERVER_LOGGING_FILE, "HBQ wurde terminiert"),
-      util:logging(?SERVER_LOGGING_FILE, "Server wurde terminiert"),
-      ok
-  after ?MAXIMAL_RESPONSE_TIME_BEFORE_ERROR ->
-    util:logging(?SERVER_LOGGING_FILE, "cant correct shutdown HBQ no answer try again"),
-    shutdownRoutine(HBQName, HBQNode)
-  end.
 
 get_timestamp() ->
   {Mega, Sec, Micro} = os:timestamp(),
