@@ -46,6 +46,6 @@ getClientNNr({CMEMList, RemTime}, ClientID, true) ->
   Now = vsutil:getUTC(),
   Comparisson = vsutil:compareUTC(Duration, Now),
   if
-   Comparisson == afterw -> NNr + 1;
+    Comparisson == afterw -> NNr + 1;
     true -> 1
   end.

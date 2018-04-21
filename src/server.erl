@@ -46,7 +46,7 @@ loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR) ->
       end,
       loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR);
     {ClientPID, getmessages} ->
-      util:logging(?SERVER_LOGGING_FILE, util:to_String(CMEM) ++ "\n"),
+      util:logging(?SERVER_LOGGING_FILE, util:to_String(ClientPID) ++ "\n"),
       {HBQname, HBQnode} ! {self(), {request, deliverMSG, cmem:getClientNNr(CMEM, ClientPID), ClientPID}},
       receive
         %%TODO: Hier kommt als SendNNr nicht 1 sondern ok an
