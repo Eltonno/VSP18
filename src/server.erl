@@ -11,14 +11,14 @@
 
 -export([start/0,loop/8]).
 
--define(SERVER_LOGGING_FILE, "Server@" ++ os:getenv("USERDOMAIN")).
+-define(SERVER_LOGGING_FILE, "Server_" ++ atom_to_list(erlang:node()) ++ ".log").
 -define(MAXIMAL_RESPONSE_TIME_BEFORE_ERROR, 10000).
 
 start() ->
 
   {Latency, Clientlifetime, Servername, HBQname, HBQnode} = readConfig(),
   CMEM = cmem:initCMEM(Clientlifetime, ?SERVER_LOGGING_FILE),
-  ServerPID = spawn(?MODULE,loop,[Latency,Clientlifetime,Servername,HBQname,HBQnode,CMEM,1,erlang:timestamp()]),
+  ServerPID = spawn(?MODULE,loop,[Latency,Clientlifetime,Servername,HBQname,HBQnode,CMEM,1,get_timestamp()]),
   register(Servername, ServerPID),
   util:logging(?SERVER_LOGGING_FILE, "Server wurde registriert\n"),
   {HBQname, HBQnode} ! {ServerPID, {request, initHBQ}}.
@@ -36,9 +36,7 @@ readConfig() ->
 
 
 loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, TimeOfLastConnection) ->
-
-
-  case vsutil:getUTC() - vsutil:now2UTC(TimeOfLastConnection) < Latency of
+  case (get_timestamp() - TimeOfLastConnection) < Latency * 1000 of
     true ->
       receive
 
@@ -48,25 +46,25 @@ loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, TimeOfLa
             {reply, ok} ->
               ok
           end,
-          loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, erlang:timestamp());
+          loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR, get_timestamp());
         {ClientPID, getmessages} ->
           NNr = cmem:getClientNNr(CMEM, ClientPID),
           {HBQname, HBQnode} ! {self(), {request, deliverMSG, NNr, ClientPID}},
           receive
             {reply, SendNNr} ->
               NewCMEM = cmem:updateClient(CMEM, ClientPID, SendNNr, ?SERVER_LOGGING_FILE),
-              loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR, erlang:timestamp())
+              loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR, get_timestamp())
           end;
         {ClientPID, getmsgid} ->
           ClientPID ! {nid, INNR},
           NewCMEM = cmem:updateClient(CMEM, ClientPID, INNR, ?SERVER_LOGGING_FILE),
-          loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR + 1, erlang:timestamp())
-      end;
-    false ->
-      shutdownRoutine(HBQname, HBQnode),
-      util:logging(?SERVER_LOGGING_FILE, "Exterminated"),
-      erlang:unregister(Servername)
-
+          loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR + 1, get_timestamp())
+      after
+        Latency * 1000 ->
+          shutdownRoutine(HBQname, HBQnode),
+          util:logging(?SERVER_LOGGING_FILE, "Exterminated"),
+          erlang:unregister(Servername)
+      end
   end.
 
 
@@ -81,3 +79,7 @@ shutdownRoutine(HBQName, HBQNode) ->
     util:logging(?SERVER_LOGGING_FILE, "cant correct shutdown HBQ no answer try again"),
     shutdownRoutine(HBQName, HBQNode)
   end.
+
+get_timestamp() ->
+  {Mega, Sec, Micro} = os:timestamp(),
+  (Mega*1000000 + Sec)*1000 + round(Micro/1000).

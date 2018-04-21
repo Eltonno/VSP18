@@ -19,7 +19,7 @@
 -define(CLIENT_LOGGING_FILE, 'CLIENT').
 -define(REDAKTEUR_ATOM, redakteur).
 -define(LESER_ATOM, leser).
--define(RECHNER_NAME, os:getenv("USERDOMAIN")).
+-define(RECHNER_NAME, erlang:node()).
 
 
 

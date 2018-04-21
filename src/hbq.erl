@@ -9,7 +9,7 @@
 -module(hbq).
 -author("Elton").
 -export([startHBQ/0,loop/3]).
--define(QUEUE_LOGGING_FILE, "HB-DLQ@" ++ os:getenv("Userdomain") ++".log").
+-define(QUEUE_LOGGING_FILE, "HB-DLQ_" ++ erlang:node() ++".log").
 
 
 
