@@ -4,6 +4,8 @@
     <list default="true" id="b013d793-0f7a-440b-8259-c0e26f4f42a6" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/src/client.erl" afterPath="$PROJECT_DIR$/src/client.erl" />
+      <change beforePath="$PROJECT_DIR$/src/cmem.erl" afterPath="$PROJECT_DIR$/src/cmem.erl" />
+      <change beforePath="$PROJECT_DIR$/src/hbq.erl" afterPath="$PROJECT_DIR$/src/hbq.erl" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,11 +20,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file leaf-file-name="client.erl" pinned="false" current-in-tab="true">
+      <file leaf-file-name="client.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/client.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="336">
-              <caret line="138" column="39" lean-forward="true" selection-start-line="138" selection-start-column="39" selection-end-line="138" selection-end-column="39" />
+            <state relative-caret-position="545">
+              <caret line="116" column="24" lean-forward="true" selection-start-line="116" selection-start-column="24" selection-end-line="116" selection-end-column="24" />
               <folding />
             </state>
           </provider>
@@ -38,11 +40,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="hbq.erl" pinned="false" current-in-tab="false">
+      <file leaf-file-name="hbq.erl" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/hbq.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="525">
-              <caret line="46" column="34" lean-forward="false" selection-start-line="46" selection-start-column="27" selection-end-line="46" selection-end-column="34" />
+            <state relative-caret-position="546">
+              <caret line="47" column="14" lean-forward="false" selection-start-line="47" selection-start-column="14" selection-end-line="47" selection-end-column="14" />
               <folding />
             </state>
           </provider>
@@ -61,8 +63,8 @@
       <file leaf-file-name="cmem.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/cmem.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="618">
-              <caret line="43" column="68" lean-forward="false" selection-start-line="43" selection-start-column="68" selection-end-line="43" selection-end-column="68" />
+            <state relative-caret-position="660">
+              <caret line="46" column="23" lean-forward="true" selection-start-line="46" selection-start-column="23" selection-end-line="46" selection-end-column="23" />
               <folding />
             </state>
           </provider>
@@ -79,8 +81,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>getMSG</find>
-      <find>fireAction</find>
       <find>bestimme_mis</find>
       <find>now2UTC</find>
       <find>to_String</find>
@@ -108,6 +108,8 @@
       <find>diffTS</find>
       <find>no</find>
       <find>key</find>
+      <find>Timestam</find>
+      <find>&quot;@&quot; ++ ?RECHNER_NAME ++</find>
       <find>getClientNNr</find>
     </findStrings>
     <replaceStrings>
@@ -116,6 +118,7 @@
       <replace>readerLOG</replace>
       <replace>timestamp</replace>
       <replace>getMSG(Servername, Servernode, ClientName, CID)</replace>
+      <replace>&quot;_&quot; ++ atom_to_list(?RECHNER_NAME) ++</replace>
       <replace>Configfile</replace>
     </replaceStrings>
   </component>
@@ -131,10 +134,10 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/src/dlq.erl" />
-        <option value="$PROJECT_DIR$/src/hbq.erl" />
-        <option value="$PROJECT_DIR$/src/cmem.erl" />
         <option value="$PROJECT_DIR$/src/server.erl" />
         <option value="$PROJECT_DIR$/src/client.erl" />
+        <option value="$PROJECT_DIR$/src/cmem.erl" />
+        <option value="$PROJECT_DIR$/src/hbq.erl" />
       </list>
     </option>
   </component>
@@ -447,7 +450,7 @@
       <updated>1522853009251</updated>
       <workItem from="1522853016408" duration="762000" />
       <workItem from="1523524002245" duration="21358000" />
-      <workItem from="1523800108851" duration="136390000" />
+      <workItem from="1523800108851" duration="138895000" />
     </task>
     <task id="LOCAL-00001" summary="weekend is very much a bad thing this time">
       <created>1523730782597</created>
@@ -575,11 +578,18 @@
       <option name="project" value="LOCAL" />
       <updated>1524326664272</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="hbq gibt fehlerbachricht aus">
+      <created>1524327309939</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1524327309939</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="158510000" />
+    <option name="totallyTimeSpent" value="161015000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-9" y="-9" width="1938" height="1048" extended-state="6" />
@@ -762,10 +772,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/cmem.erl">
+    <entry file="file://$PROJECT_DIR$/src/server.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="618">
-          <caret line="43" column="68" lean-forward="false" selection-start-line="43" selection-start-column="68" selection-end-line="43" selection-end-column="68" />
+        <state relative-caret-position="336">
+          <caret line="52" column="8" lean-forward="false" selection-start-line="52" selection-start-column="8" selection-end-line="52" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/client.erl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="545">
+          <caret line="116" column="24" lean-forward="true" selection-start-line="116" selection-start-column="24" selection-end-line="116" selection-end-column="24" />
           <folding />
         </state>
       </provider>
@@ -778,26 +796,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/server.erl">
+    <entry file="file://$PROJECT_DIR$/src/cmem.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="336">
-          <caret line="52" column="8" lean-forward="false" selection-start-line="52" selection-start-column="8" selection-end-line="52" selection-end-column="8" />
+        <state relative-caret-position="660">
+          <caret line="46" column="23" lean-forward="true" selection-start-line="46" selection-start-column="23" selection-end-line="46" selection-end-column="23" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/hbq.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="525">
-          <caret line="46" column="34" lean-forward="false" selection-start-line="46" selection-start-column="27" selection-end-line="46" selection-end-column="34" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/client.erl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="336">
-          <caret line="138" column="39" lean-forward="true" selection-start-line="138" selection-start-column="39" selection-end-line="138" selection-end-column="39" />
+        <state relative-caret-position="546">
+          <caret line="47" column="14" lean-forward="false" selection-start-line="47" selection-start-column="14" selection-end-line="47" selection-end-column="14" />
           <folding />
         </state>
       </provider>

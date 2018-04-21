@@ -45,6 +45,7 @@ loop(DlqLimit, HBQ, DLQ) ->
       SendNNr = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
       util:logging(?QUEUE_LOGGING_FILE, "\n" ++ util:to_String(SendNNr) ++ "\n"),
       ServerPID !  {reply, SendNNr},
+      SendNNr,
       loop(DlqLimit, HBQ, DLQ);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, dellHBQ}} ->

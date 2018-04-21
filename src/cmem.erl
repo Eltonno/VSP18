@@ -39,13 +39,13 @@ getClientNNr(_CMEM, _ClientID, false) -> 1;
 %% known client, time exceeded? YES -> 1, NO, NNr + 1
 getClientNNr({CMEMList, RemTime}, ClientID, true) ->
   {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
-  util:logging('cmem.log', "\n" ++ util:to_String(CMEMList) ++ "\n" ++ util:to_String(NNr) ++ "\n"),
-  NNr + 1.
+  util:logging('cmem.log', "\n" ++ util:to_String(CMEMList) ++ "\n" ++ util:to_String(NNr) ++ "\n" ++ util:to_String(ClientTimestamp) ++ "\n"),
+ %% NNr + 1.
 %%TODO: Hier muss noch wieder die Vergesslichkeit integriert werden.
-%%  Duration = ClientTimestamp + RemTime,
-%%  Now = vsutil:getUTC(),
-%%  Comparisson = vsutil:compareUTC(Duration, Now),
-%%  if
-%%   Comparisson == afterw -> NNr + 1;
-%%    true -> 1
-%%  end.
+  Duration = ClientTimestamp + (RemTime * 1000),
+  Now = vsutil:getUTC(),
+  Comparisson = vsutil:compareUTC(Duration, Now),
+  if
+   Comparisson == afterw -> NNr + 1;
+    true -> 1
+  end.

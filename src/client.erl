@@ -60,7 +60,7 @@ start() ->
 spawner(0, _Lifetime, _Servername, _Servernode, _Sendinterval) ->
   ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
-  register(list_to_atom("Client_" ++ util:to_String(Clients)), spawn(fun() -> loop(("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [])end)),
+  register(list_to_atom("Client_" ++ util:to_String(Clients)), spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, []])),
   util:logging(list_to_atom(("Client_" ++ util:to_String(Clients)) ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), "Der Client:" ++
     util:to_String(("Client_" ++ util:to_String(Clients))) ++ " wurde registriert. ~n"),
   spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval).
@@ -80,7 +80,7 @@ readConfig() ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 forgottenMessage(NNr, Timestamp, ClientName) ->
-  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ io:format("~s~n",[print_time:format_utc_timestamp(Timestamp)]) ++ " wurde vergessen.\n").
+  util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), util:to_String(NNr) ++ "te_Nachricht um " ++ util:to_String(Timestamp) ++ " wurde vergessen.\n").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -99,15 +99,15 @@ loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, Tran
           loop(ClientName, Lifetime, Servername, Servernode, NewInterval, StartTime, 0, NewRole, OwnMsgs);
         true ->
           ActionReturn = fireAction({Role, Servername, Servernode}, Sendinterval, ClientName, OwnMsgs),
-          case erlang:is_tuple(ActionReturn) of
-            true ->
-              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role, OwnMsgs);
+          case ActionReturn == ok of
             false ->
+              loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, TransmittedNumber + 1, Role, OwnMsgs);
+            true ->
               loop(ClientName, Lifetime, Servername, Servernode, Sendinterval, StartTime, 0, switchRoles(Role), OwnMsgs)
           end
       end;
     false ->
-      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(ClientName) ++ " exceeded it's lifetime at " ++ util:to_String(erlang:timestamp()) ++ "\n"),
+      util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), util:to_String(ClientName) ++ " exceeded it's lifetime at " ++ util:to_String(erlang:timestamp()) ++ "\n"),
       erlang:exit("Lifetime is over")
   end.
 
@@ -128,31 +128,59 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
   TSclientin = calendar:now_to_local_time(erlang:timestamp()),
   if
     TSclientout == {0,0,0} ->     %% vsutil:equalTS(TSclientout, {0,0,0}) musn't be used in guard therefor we used <---
-      util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
+      util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
     true ->
       Boolean = vsutil:lessTS(TSdlqout, TSclientin),
-      %%TODO: ****** anfügen an Nachrichten die vom eigenen Redakteur kommen.
-      if
-        Boolean ->
-          util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
-            util:to_String(NNr) ++
-              "te_Nachricht. C Out:" ++
-              util:to_String(TSclientout) ++
-              "| ; HBQ In:" ++
-              util:to_String(TShbqin) ++
-              "| ; DLQ Out:" ++
-              util:to_String(TSdlqout) ++
-              "|***Nachricht aus der Zukunft ^^\n");
-        true ->
-          util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
-            util:to_String(NNr) ++
-              "te_Nachricht. C Out:" ++
-              util:to_String(TSclientout) ++
-              "| ; HBQ In:" ++
-              util:to_String(TShbqin) ++
-              "| ; DLQ Out:" ++
-              util:to_String(TSdlqout) ++
-              "\n")
+      Member = lists:member(NNr, OwnMsgs),
+      util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),util:to_String(Member)),
+      case Member of
+        true->
+          if
+            Boolean ->
+              util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "|***Nachricht aus der Zukunft ^^ *******\n");
+            true ->
+              util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "*******\n")
+          end;
+        false ->
+          Boolean = vsutil:lessTS(TSdlqout, TSclientin),
+          if
+            Boolean ->
+              util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "|***Nachricht aus der Zukunft ^^\n");
+            true ->
+              util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
+                util:to_String(NNr) ++
+                  "te_Nachricht. C Out:" ++
+                  util:to_String(TSclientout) ++
+                  "| ; HBQ In:" ++
+                  util:to_String(TShbqin) ++
+                  "| ; DLQ Out:" ++
+                  util:to_String(TSdlqout) ++
+                  "\n")
+          end
       end
   end,
   ok.
