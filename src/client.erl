@@ -60,9 +60,9 @@ start() ->
 spawner(0, _Lifetime, _Servername, _Servernode, _Sendinterval) ->
   ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
-  ClientPID = spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ]),
-  register(list_to_atom("Client_" ++ util:to_String(Clients)), ClientPID),
-  util:logging(list_to_atom(("Client_" ++ util:to_String(Clients)) ++ "@" ++ ?RECHNER_NAME ++ ".log"), "Der Client:" ++
+%%  ClientPID = spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ]),
+  register("Client_" ++ util:to_String(Clients), spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ])),
+  util:logging(list_to_atom(("Client_" ++ util:to_String(Clients)) ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), "Der Client:" ++
     util:to_String(("Client_" ++ util:to_String(Clients))) ++ " wurde registriert. ~n"),
   spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval).
 
@@ -129,11 +129,11 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
   TSclientin = calendar:now_to_local_time(erlang:timestamp()),
   if
     TSclientout == {0,0,0} ->     %% vsutil:equalTS(TSclientout, {0,0,0}) musn't be used in guard therefor we used <---
-      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
+      util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), Msg++ "| C In: " ++ util:to_String(TSclientin) ++"\n");
     true ->
       Boolean = vsutil:lessTS(TSdlqout, TSclientin),
       Member = lists:member(NNr, OwnMsgs),
-      util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),util:to_String(Member)),
+      %%util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),util:to_String(Member)),
       %%case Member of
         %%true->
 %%          if
@@ -172,7 +172,7 @@ readerLOG([NNr, Msg, TSclientout, TShbqin, TSdlqout], ClientName, OwnMsgs) ->
                   util:to_String(TSdlqout) ++
                   "|***Nachricht aus der Zukunft ^^\n");
             true ->
-              util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"),
+              util:logging(list_to_atom(ClientName ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"),
                 util:to_String(NNr) ++
                   "te_Nachricht. C Out:" ++
                   util:to_String(TSclientout) ++
@@ -222,5 +222,5 @@ dropMSG(Servername, Servernode, Interval, ClientName, OwnMsgs) ->
   timer:sleep(trunc(Interval * 1000)),
   TSClientout = erlang:timestamp(),
   {Servername, Servernode} ! {dropmessage, [INNr, Msg, TSClientout]},
-  util:logging(list_to_atom(ClientName ++ "@" ++ ?RECHNER_NAME ++ ".log"), util:to_String(INNr) ++ "te_Nachricht. C Out: " ++ util:to_String(calendar:now_to_local_time(TSClientout)) ++ ". | gesendet\n"),
+  util:logging(list_to_atom(ClientName ++ "_" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), util:to_String(INNr) ++ "te_Nachricht. C Out: " ++ util:to_String(calendar:now_to_local_time(TSClientout)) ++ ". | gesendet\n"),
   NewOwn.

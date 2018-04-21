@@ -17,19 +17,19 @@
 
 initCMEM(RemTime, Datei) ->
   util:logging(Datei, "CMEM initialisiert\nRemTime is: " ++ util:to_String(RemTime) ++ "\n"),
-  {RemTime, []}.
+  {[], RemTime}.
 
 delCMEM(_CMEM) ->
   ok.
 
-updateClient({RemTime, CMEM}, ClientID, NNr, Datei) ->
+updateClient({CMEM, RemTime}, ClientID, NNr, Datei) ->
   ClientTS = vsutil:getUTC(),
   util:logging(Datei, lists:concat(["CMEM>>> Client ", pid_to_list(ClientID), " updated (", NNr, "/", ClientTS, ")\n"])),
   {lists:keystore(ClientID, 1, CMEM, {ClientID, NNr, ClientTS}), RemTime}.
 
 
 %% Request which NNr the client may obtain next
-getClientNNr({RemTime, CMEMList}, ClientID) ->
+getClientNNr({CMEMList, RemTime}, ClientID) ->
   Existent = lists:keymember(ClientID, 1, CMEMList),
   getClientNNr({CMEMList, RemTime}, ClientID, Existent).
 
@@ -37,8 +37,9 @@ getClientNNr({RemTime, CMEMList}, ClientID) ->
 getClientNNr(_CMEM, _ClientID, false) -> 1;
 
 %% known client, time exceeded? YES -> 1, NO, NNr + 1
-getClientNNr({RemTime, CMEMList}, ClientID, true) ->
+getClientNNr({CMEMList, RemTime}, ClientID, true) ->
   {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
+  util:logging('cmem.log', "\n" ++ util:to_String(CMEMList) ++ "\n" ++ util:to_String(NNr) ++ "\n"),
   NNr + 1.
 %%  Duration = ClientTimestamp + RemTime,
 %%  Now = vsutil:getUTC(),
