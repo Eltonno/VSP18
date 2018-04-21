@@ -46,9 +46,12 @@ loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR) ->
       end,
       loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, CMEM, INNR);
     {ClientPID, getmessages} ->
+      util:logging(?SERVER_LOGGING_FILE, util:to_String(CMEM) ++ "\n"),
       {HBQname, HBQnode} ! {self(), {request, deliverMSG, cmem:getClientNNr(CMEM, ClientPID), ClientPID}},
       receive
+        %%TODO: Hier kommt als SendNNr nicht 1 sondern ok an
         {reply, SendNNr} ->
+          util:logging(?SERVER_LOGGING_FILE, util:to_String(SendNNr) ++ "\n"),
           NewCMEM = cmem:updateClient(CMEM, ClientPID, SendNNr, ?SERVER_LOGGING_FILE),
           loop(Latency, Clientlifetime, Servername, HBQname, HBQnode, NewCMEM, INNR)
       end;

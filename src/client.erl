@@ -61,7 +61,8 @@ spawner(0, _Lifetime, _Servername, _Servernode, _Sendinterval) ->
   ok;
 spawner(Clients, Lifetime, Servername, Servernode, Sendinterval) ->
 %%  ClientPID = spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ]),
-  register("Client_" ++ util:to_String(Clients), spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ])),
+  %%TODO: An dieser stelle stimmt etwas mit der Funktion register/2 nicht
+  register(list_to_atom("Client_" ++ util:to_String(Clients)), spawn(?MODULE, loop, [("Client" ++ util:to_String(Clients)), Lifetime, Servername, Servernode, Sendinterval, erlang:timestamp(), 0, ?REDAKTEUR_ATOM, [] ])),
   util:logging(list_to_atom(("Client_" ++ util:to_String(Clients)) ++ "@" ++ atom_to_list(?RECHNER_NAME) ++ ".log"), "Der Client:" ++
     util:to_String(("Client_" ++ util:to_String(Clients))) ++ " wurde registriert. ~n"),
   spawner(Clients-1, Lifetime, Servername, Servernode, Sendinterval).

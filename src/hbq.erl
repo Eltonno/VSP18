@@ -33,8 +33,7 @@ loop(DlqLimit, HBQ, DLQ) ->
   receive
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, initHBQ}} ->
-      ServerPID ! {reply,ok},   %%TODO: Hier muss noch dringend das Problem behoben werden.
-                                %%TODO: Einzige Frage ist was wirklich wie zurückgegeben werden muss
+      ServerPID ! {reply,ok},
       loop(DlqLimit, [], dlq:initDLQ(DlqLimit, ?QUEUE_LOGGING_FILE));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, pushHBQ, [NNr, Msg, TSclientout]}} ->
@@ -44,7 +43,7 @@ loop(DlqLimit, HBQ, DLQ) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     {ServerPID, {request, deliverMSG, NNr, ToClient}} ->
       SendNNr = dlq:deliverMSG(NNr, ToClient, DLQ, ?QUEUE_LOGGING_FILE),
-      util:logging(?QUEUE_LOGGING_FILE, util:to_String(SendNNr)),
+      util:logging(?QUEUE_LOGGING_FILE, "\n" ++ util:to_String(SendNNr) ++ "\n"),
       ServerPID !  {reply, SendNNr},
       loop(DlqLimit, HBQ, DLQ);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

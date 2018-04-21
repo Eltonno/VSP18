@@ -41,6 +41,7 @@ getClientNNr({CMEMList, RemTime}, ClientID, true) ->
   {ClientID, NNr, ClientTimestamp} = lists:keyfind(ClientID, 1, CMEMList),
   util:logging('cmem.log', "\n" ++ util:to_String(CMEMList) ++ "\n" ++ util:to_String(NNr) ++ "\n"),
   NNr + 1.
+%%TODO: Hier muss noch wieder die Vergesslichkeit integriert werden.
 %%  Duration = ClientTimestamp + RemTime,
 %%  Now = vsutil:getUTC(),
 %%  Comparisson = vsutil:compareUTC(Duration, Now),
